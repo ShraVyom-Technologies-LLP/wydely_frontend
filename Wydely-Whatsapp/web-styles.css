@@ -1,0 +1,23 @@
+/* Global styles to remove focus outlines on web */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: inherit !important;
+}
+
+/* Remove any browser default focus styles */
+*:focus {
+  outline: none !important;
+}
+
+/* Ensure React Native Web inputs don't have focus rings */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="tel"] {
+  outline: none !important;
+  box-shadow: none !important;
+}

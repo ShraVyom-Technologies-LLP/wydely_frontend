@@ -8,6 +8,7 @@ import LoginPage from '../screens/LoginPage';
 import OTPVerificationPage from '../screens/OTPVerificationPage';
 import DashboardPageWrapper from '../screens/DashboardPageWrapper';
 import ProfilePage from '../screens/ProfilePage';
+import BroadcastCampaignPageWrapper from '../screens/BroadcastCampaignPageWrapper';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -21,6 +22,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       OTP: '/otp',
       Dashboard: '/dashboard',
       Profile: '/profile',
+      BroadcastCampaign: '/campaigns/broadcast',
     },
   },
 };
@@ -39,6 +41,7 @@ const AppNavigator = () => {
         <Stack.Screen name="OTP" component={OTPVerificationPage} />
         <Stack.Screen name="Dashboard" component={DashboardPageWrapper} />
         <Stack.Screen name="Profile" component={ProfilePage} />
+        <Stack.Screen name="BroadcastCampaign" component={BroadcastCampaignPageWrapper} />
       </Stack.Navigator>
     </NavigationContainer>
   );

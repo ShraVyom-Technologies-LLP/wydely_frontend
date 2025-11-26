@@ -1,4 +1,0 @@
-import * as React from "react";
-import type { SVGProps } from "react";
-const Component = (props: SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14.833 16.5" {...props}><path xmlns="http://www.w3.org/2000/svg" stroke="#D0D5DD" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.917 12.417h4.166l-1.17-1.171a1.7 1.7 0 0 1-.496-1.197V7.417a5 5 0 0 0-3.334-4.716v-.284a1.667 1.667 0 1 0-3.333 0v.284a5 5 0 0 0-3.333 4.716v2.632c0 .449-.179.879-.496 1.197L.75 12.417h4.167m5 0v.833a2.5 2.5 0 1 1-5 0v-.833m5 0h-5" /></svg>;
-export default Component;

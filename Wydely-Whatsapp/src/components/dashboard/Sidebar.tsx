@@ -1,58 +1,41 @@
-import React from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
-import colors from "../../theme/colors";
-import WLogoIcon from "../../../assets/images/WLogoIcon.svg";
-import ChatBubbleIcon from "../icons/ChatBubbleIcon";
-import UsersGroupIcon from "../icons/UsersGroupIcon";
-import ClockCounterIcon from "../icons/ClockCounterIcon";
-import BellNotificationIcon from "../icons/BellNotificationIcon";
-import SettingsAsteriskIcon from "../icons/SettingsAsteriskIcon";
-import InfoIcon from "../icons/InfoIcon";
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity, Image, ImageSourcePropType } from 'react-native';
+import WLogoIcon from '../icons/WLogoIcon';
 
 interface SidebarProps {
   activeIcon?: string;
   onIconPress?: (icon: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({
-  activeIcon = "chat",
-  onIconPress,
-}) => {
-  const topIcons = [
-    { id: "chat", component: ChatBubbleIcon, hasBadge: true },
-  ];
+const navItems: { [key: string]: ImageSourcePropType } = {
+  home: require('../../../assets/images/nav_item_1.png'),
+  messages: require('../../../assets/images/nav_item_2.png'),
+  campaigns: require('../../../assets/images/nav_item_4.png'),
+  history: require('../../../assets/images/nav_item_3.png'),
+  notifications: require('../../../assets/images/nav_item_6.png'),
+  settings: require('../../../assets/images/nav_item_7.png'),
+  help: require('../../../assets/images/nav_item_8.png'),
+};
 
-  const middleIcons = [
-    { id: "users", component: UsersGroupIcon, hasBadge: true },
-    { id: "clock", component: ClockCounterIcon, hasBadge: false },
-  ];
+const NavItem = ({
+  isActive,
+  onPress,
+  icon,
+}: {
+  isActive: boolean;
+  onPress: () => void;
+  icon: ImageSourcePropType;
+}) => (
+  <TouchableOpacity style={[styles.navItem, isActive && styles.navItemActive]} onPress={onPress}>
+    <Image
+      source={icon}
+      style={[styles.navIcon, { tintColor: isActive ? '#0B1A07' : '#FFFFFF' }]}
+      resizeMode="contain"
+    />
+  </TouchableOpacity>
+);
 
-  const bottomIcons = [
-    { id: "bell", component: BellNotificationIcon, hasBadge: false },
-    { id: "settings", component: SettingsAsteriskIcon, hasBadge: false },
-    { id: "info", component: InfoIcon, hasBadge: false },
-  ];
-
-  const renderIcon = (
-    id: string,
-    IconComponent: any,
-    hasBadge: boolean,
-    isActive: boolean
-  ) => {
-    return (
-      <TouchableOpacity
-        key={id}
-        style={[styles.iconButton, isActive && styles.iconButtonActive]}
-        onPress={() => onIconPress?.(id)}
-      >
-        <View style={styles.iconWrapper}>
-          <IconComponent width={20} height={20} color="#FFFFFF" />
-          {hasBadge && <View style={styles.badge} />}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
+const Sidebar: React.FC<SidebarProps> = ({ activeIcon = 'home', onIconPress }) => {
   return (
     <View style={styles.container}>
       {/* W Logo */}
@@ -60,31 +43,52 @@ const Sidebar: React.FC<SidebarProps> = ({
         <WLogoIcon width={32} height={32} />
       </View>
 
-      {/* Top Icon - Chat */}
-      <View style={styles.topIconsContainer}>
-        {topIcons.map(({ id, component, hasBadge }) =>
-          renderIcon(id, component, hasBadge, activeIcon === id)
-        )}
+      {/* Top Navigation Group */}
+      <View style={styles.nav}>
+        <NavItem
+          isActive={activeIcon === 'home'}
+          onPress={() => onIconPress?.('home')}
+          icon={navItems.home}
+        />
+        <NavItem
+          isActive={activeIcon === 'messages'}
+          onPress={() => onIconPress?.('messages')}
+          icon={navItems.messages}
+        />
+        <NavItem
+          isActive={activeIcon === 'campaigns'}
+          onPress={() => onIconPress?.('campaigns')}
+          icon={navItems.campaigns}
+        />
+        <NavItem
+          isActive={activeIcon === 'history'}
+          onPress={() => onIconPress?.('history')}
+          icon={navItems.history}
+        />
       </View>
 
       {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Middle Icons */}
-      <View style={styles.middleIconsContainer}>
-        {middleIcons.map(({ id, component, hasBadge }) =>
-          renderIcon(id, component, hasBadge, activeIcon === id)
-        )}
+      <View style={styles.dividerContainer}>
+        <View style={styles.divider} />
       </View>
 
-      {/* Spacer */}
-      <View style={styles.spacer} />
-
-      {/* Bottom Icons */}
-      <View style={styles.bottomIconsContainer}>
-        {bottomIcons.map(({ id, component, hasBadge }) =>
-          renderIcon(id, component, hasBadge, activeIcon === id)
-        )}
+      {/* Bottom Navigation Group */}
+      <View style={styles.nav}>
+        <NavItem
+          isActive={activeIcon === 'notifications'}
+          onPress={() => onIconPress?.('notifications')}
+          icon={navItems.notifications}
+        />
+        <NavItem
+          isActive={activeIcon === 'settings'}
+          onPress={() => onIconPress?.('settings')}
+          icon={navItems.settings}
+        />
+        <NavItem
+          isActive={activeIcon === 'help'}
+          onPress={() => onIconPress?.('help')}
+          icon={navItems.help}
+        />
       </View>
     </View>
   );
@@ -93,63 +97,50 @@ const Sidebar: React.FC<SidebarProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: 60,
-    backgroundColor: colors.sidebarBg,
-    alignItems: "center",
-    paddingTop: 16,
-    paddingBottom: 16,
+    height: '100%',
+    backgroundColor: '#0B1A07',
+    alignItems: 'center',
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.07,
+    shadowRadius: 44,
+    elevation: 5,
   },
   logoContainer: {
-    marginBottom: 24,
-    alignItems: "center",
+    height: 64,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
-  topIconsContainer: {
-    alignItems: "center",
+  nav: {
+    flexDirection: 'column',
     gap: 4,
+    paddingHorizontal: 8,
+  },
+  navItem: {
+    padding: 12,
+    borderRadius: 99,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navItemActive: {
+    backgroundColor: '#FFFFFF',
+  },
+  navIcon: {
+    width: 24,
+    height: 24,
+  },
+  dividerContainer: {
+    width: 36,
+    height: 1,
   },
   divider: {
-    width: 37,
     height: 1,
-    backgroundColor: "#64748B",
-    marginVertical: 24,
-  },
-  middleIconsContainer: {
-    alignItems: "center",
-    gap: 12,
-  },
-  spacer: {
-    flex: 1,
-  },
-  bottomIconsContainer: {
-    alignItems: "center",
-    gap: 12,
-  },
-  iconButton: {
-    width: 38,
-    height: 38,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 12,
-  },
-  iconButtonActive: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-  },
-  iconWrapper: {
-    position: "relative",
-    width: 20,
-    height: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  badge: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#F9F916",
-    borderWidth: 1,
-    borderColor: colors.sidebarBg,
+    backgroundColor: '#64748B',
+    width: '100%',
   },
 });
 

@@ -21,3 +21,14 @@ input[type="tel"] {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* Ensure the app root has full height so nested ScrollViews can scroll */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}

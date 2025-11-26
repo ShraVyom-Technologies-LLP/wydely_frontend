@@ -1,14 +1,8 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-} from "react";
-import { ChatItem } from "../components/dashboard/ChatListPanel";
-import { Message } from "../components/dashboard/ChatPanel";
-import { UserProfile } from "../components/dashboard/UserProfilePanel";
-import { chatApi } from "../services/chatApi";
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { ChatItem } from '../components/dashboard/chatsDashboard/ChatListPanel';
+import { Message } from '../components/dashboard/chatsDashboard/ChatPanel';
+import { UserProfile } from '../components/dashboard/chatsDashboard/UserProfilePanel';
+import { chatApi } from '../services/chatApi';
 
 interface DashboardState {
   // Tabs
@@ -48,18 +42,16 @@ interface DashboardState {
 
 const DashboardContext = createContext<DashboardState | undefined>(undefined);
 
-export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [activeTab, setActiveTab] = useState("active");
+export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [activeTab, setActiveTab] = useState('active');
   const [chats, setChats] = useState<ChatItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedChatId, setSelectedChatId] = useState<string | undefined>();
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [profiles, setProfiles] = useState<Record<string, UserProfile>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeIcon, setActiveIcon] = useState("chat");
+  const [activeIcon, setActiveIcon] = useState('home');
 
   // Filter chats based on search and tab
   const filteredChats = React.useMemo(() => {
@@ -105,9 +97,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       const newMessage: Message = {
         id: `msg-${Date.now()}`,
         text: text.trim(),
-        timestamp: new Date().toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
+        timestamp: new Date().toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
           hour12: false,
         }),
         isFromUser: true,
@@ -133,7 +125,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         // Send to API
         await chatApi.sendMessage(chatId, text);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to send message");
+        setError(err instanceof Error ? err.message : 'Failed to send message');
         // In a real app, you might want to rollback the optimistic update
       }
     },
@@ -148,7 +140,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       const data = await chatApi.getChats(activeTab);
       setChats(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load chats");
+      setError(err instanceof Error ? err.message : 'Failed to load chats');
     } finally {
       setIsLoading(false);
     }
@@ -163,7 +155,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         [chatId]: data,
       }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load messages");
+      setError(err instanceof Error ? err.message : 'Failed to load messages');
     }
   }, []);
 
@@ -189,7 +181,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             }));
           })
           .catch((err) => {
-            console.error("Failed to load profile:", err);
+            console.error('Failed to load profile:', err);
           });
       }
     }
@@ -212,7 +204,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     setSelectedChatId,
     selectedChat,
     currentProfile,
-    messages: messages[selectedChatId || ""] || [],
+    messages: messages[selectedChatId || ''] || [],
     addMessage,
     sendMessage,
     isLoading,
@@ -223,17 +215,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     refreshMessages,
   };
 
-  return (
-    <DashboardContext.Provider value={value}>
-      {children}
-    </DashboardContext.Provider>
-  );
+  return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;
 };
 
 export const useDashboard = () => {
   const context = useContext(DashboardContext);
   if (!context) {
-    throw new Error("useDashboard must be used within DashboardProvider");
+    throw new Error('useDashboard must be used within DashboardProvider');
   }
   return context;
 };

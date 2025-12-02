@@ -17,6 +17,8 @@ import ChatListPanel from '../components/dashboard/chatsDashboard/ChatListPanel'
 import UserProfilePanel from '../components/dashboard/chatsDashboard/UserProfilePanel';
 import ChatPanel from '../components/dashboard/chatsDashboard/ChatPanel';
 import CampaignsPage from '../components/CampaignsPage';
+import ContactsPage from '../components/ContactsPage';
+import MyAccountPage from '../components/MyAccountPage';
 import colors from '../theme/colors';
 import { RootStackParamList } from '../navigation/types';
 
@@ -62,6 +64,10 @@ export default function DashboardPage() {
   const [mobileView, setMobileView] = useState<'list' | 'chat' | 'profile'>('list');
   const [showSidebar, setShowSidebar] = useState(false);
 
+  const userInitial = (route.params?.userName || '').trim()
+    ? route.params!.userName!.trim().charAt(0).toUpperCase()
+    : 'P';
+
   const handleThemeToggle = () => {
     // Theme toggle functionality
     // TODO: Implement theme toggle
@@ -95,7 +101,11 @@ export default function DashboardPage() {
   const renderMessagesPage = () => (
     <>
       {/* Header */}
-      <DashboardHeader onSearchChange={setSearchQuery} onThemeToggle={handleThemeToggle} />
+      <DashboardHeader
+        onSearchChange={setSearchQuery}
+        onThemeToggle={handleThemeToggle}
+        title="Chats"
+      />
 
       {/* Tabs */}
       <ChatTabs activeTab={activeTab} onTabChange={setActiveTab} chats={filteredChats} />
@@ -193,8 +203,10 @@ export default function DashboardPage() {
         return renderMessagesPage();
       case 'campaigns':
         return <CampaignsPage />;
-      case 'history':
-        return <PlaceholderPage title="Activity History" />;
+      case 'contacts':
+        return <ContactsPage />;
+      case 'profile':
+        return <MyAccountPage />;
       case 'notifications':
         return <PlaceholderPage title="Notifications" />;
       case 'settings':
@@ -213,6 +225,7 @@ export default function DashboardPage() {
         <View style={[styles.sidebarContainer, mobile && styles.sidebarMobile]}>
           <Sidebar
             activeIcon={activeIcon}
+            userInitial={userInitial}
             onIconPress={(icon) => {
               setActiveIcon(icon);
               if (mobile) setShowSidebar(false);

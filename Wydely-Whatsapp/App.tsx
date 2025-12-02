@@ -1,8 +1,8 @@
+import { View, StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import AppNavigator from "./src/navigation/AppNavigator";
 
-// Import web styles to remove focus outlines
 if (typeof window !== "undefined") {
   require("./web-styles.css");
 }
@@ -10,8 +10,14 @@ if (typeof window !== "undefined") {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <AppNavigator />
+      <View style={styles.root}>
+        <StatusBar style="dark" />
+        <AppNavigator />
+      </View>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, minHeight: 0 },
+});

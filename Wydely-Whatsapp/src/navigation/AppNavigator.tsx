@@ -7,8 +7,8 @@ import SignUpPage from '../screens/SignUpPage';
 import LoginPage from '../screens/LoginPage';
 import OTPVerificationPage from '../screens/OTPVerificationPage';
 import DashboardPageWrapper from '../screens/DashboardPageWrapper';
-import ProfilePage from '../screens/ProfilePage';
 import BroadcastCampaignPageWrapper from '../screens/BroadcastCampaignPageWrapper';
+import BroadcastCampaignPreviewPageWrapper from '../screens/BroadcastCampaignPreviewPageWrapper';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -23,6 +23,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       Dashboard: '/dashboard',
       Profile: '/profile',
       BroadcastCampaign: '/campaigns/broadcast',
+      BroadcastCampaignPreview: '/campaigns/broadcast/preview',
     },
   },
 };
@@ -33,15 +34,19 @@ const AppNavigator = () => {
       <Stack.Navigator
         initialRouteName="SignUp"
         screenOptions={{
-          headerShown: false, // Hide default header for custom designs
+          headerShown: false,
+          cardStyle: { flex: 1 }, // ✅ critical for web ScrollView
         }}
       >
         <Stack.Screen name="SignUp" component={SignUpPage} />
         <Stack.Screen name="Login" component={LoginPage} />
         <Stack.Screen name="OTP" component={OTPVerificationPage} />
         <Stack.Screen name="Dashboard" component={DashboardPageWrapper} />
-        <Stack.Screen name="Profile" component={ProfilePage} />
         <Stack.Screen name="BroadcastCampaign" component={BroadcastCampaignPageWrapper} />
+        <Stack.Screen
+          name="BroadcastCampaignPreview"
+          component={BroadcastCampaignPreviewPageWrapper}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

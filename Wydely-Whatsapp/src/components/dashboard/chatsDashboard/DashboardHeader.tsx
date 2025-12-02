@@ -6,12 +6,13 @@ import SunIconHeader from '../../icons/SunIconHeader';
 interface DashboardHeaderProps {
   onSearchChange?: (text: string) => void;
   onThemeToggle?: () => void;
+  title: string;
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onSearchChange, onThemeToggle }) => {
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onSearchChange, onThemeToggle, title }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Chats</Text>
+      <Text style={styles.title}>{title}</Text>
 
       <View style={styles.centerSection}>
         <View style={styles.searchContainer}>

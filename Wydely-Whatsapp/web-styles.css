@@ -23,12 +23,26 @@ input[type="tel"] {
 }
 
 /* Ensure the app root has full height so nested ScrollViews can scroll */
-html,
-body,
-#root {
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+}
+
+/* Expo/Web adds an extra wrapper div inside #root */
+#root, #root > div {
   height: 100%;
 }
 
-body {
-  margin: 0;
+/* Make sure the app runs in a flex column and children can shrink (critical for scroll) */
+#root > div {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
+
+/* Optional but often helps: prevent body scroll and let RN ScrollView handle scrolling */
+body {
+  overflow: hidden;
+}
+

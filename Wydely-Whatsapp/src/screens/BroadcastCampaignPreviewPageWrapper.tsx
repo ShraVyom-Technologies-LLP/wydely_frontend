@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
 import Sidebar from '../components/dashboard/Sidebar';
-import BroadcastCampaignPage from '../components/BroadcastCampaignPage';
+import BroadcastCampaignPreviewPage from '../components/BroadcastCampaignPreviewPage';
 import colors from '../theme/colors';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
@@ -16,7 +15,7 @@ const isMobile = () => {
   return width < 768;
 };
 
-export default function BroadcastCampaignPageWrapper() {
+export default function BroadcastCampaignPreviewPageWrapper() {
   const navigation = useNavigation<NavigationProp>();
   const [activeIcon, setActiveIcon] = useState('campaigns');
   const [showSidebar, setShowSidebar] = useState(false);
@@ -31,39 +30,30 @@ export default function BroadcastCampaignPageWrapper() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Sidebar - Hidden on mobile unless toggled */}
-        {(!mobile || showSidebar) && (
-          <View style={[styles.sidebarContainer, mobile && styles.sidebarMobile]}>
-            <Sidebar activeIcon={activeIcon} onIconPress={handleIconPress} />
-          </View>
-        )}
-
-        {/* Main Content Area */}
-        <View style={styles.mainContent}>
-          <BroadcastCampaignPage />
+    <View style={styles.container}>
+      {/* Sidebar - Hidden on mobile unless toggled */}
+      {(!mobile || showSidebar) && (
+        <View style={[styles.sidebarContainer, mobile && styles.sidebarMobile]}>
+          <Sidebar activeIcon={activeIcon} onIconPress={handleIconPress} />
         </View>
+      )}
+
+      {/* Main Content Area */}
+      <View style={styles.mainContent}>
+        <BroadcastCampaignPreviewPage />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
   container: {
     flex: 1,
     flexDirection: 'row',
     backgroundColor: colors.bg,
-    minHeight: 0,
-    minWidth: 0,
   },
   sidebarContainer: {
-    width: 60,
-    flexShrink: 0,
+    zIndex: 10,
   },
   sidebarMobile: {
     position: 'absolute',
@@ -79,7 +69,9 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+    flexDirection: 'column',
+    // Important for web so nested ScrollView can actually scroll
+    // (prevents the flex item from expanding beyond the viewport height)
     minHeight: 0,
-    minWidth: 0,
   },
 });

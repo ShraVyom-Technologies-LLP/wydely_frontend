@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -19,6 +19,40 @@ interface RadioGroupProps {
   onSelect: (value: string) => void;
   showInfo?: boolean;
 }
+
+interface TemplateOption {
+  id: string;
+  name: string;
+  content: string;
+}
+
+// Mock templates as if they were returned from an API
+const mockTemplates: TemplateOption[] = [
+  {
+    id: 'welcome_newsletter',
+    name: 'Welcome Newsletter',
+    content:
+      "Hi {{name}},\n\nThanks for subscribing to our WhatsApp Newsletter.\n\nWe'll send you the latest updates, trends, and tactics from Shravyom Marketing straight to your WhatsApp.\n\nBest Regards,\nShravyom Technologies",
+  },
+  {
+    id: 'abandoned_cart',
+    name: 'Abandoned Cart Reminder',
+    content:
+      'Hi {{name}},\n\nYou left some amazing products in your cart.\nComplete your purchase now to avoid missing out.\n\nReply HELP if you have any questions.\n\nBest,\nShravyom Technologies',
+  },
+  {
+    id: 'promo_festive',
+    name: 'Festive Offer',
+    content:
+      'Hello {{name}},\n\nEnjoy our Festive Offer with flat 20% OFF on all products.\nUse code FESTIVE20 at checkout.\n\nOffer valid till {{date}}.\n\nWarm Regards,\nShravyom Technologies',
+  },
+];
+
+// Simulated API call for templates
+const fetchTemplates = async (): Promise<TemplateOption[]> => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return mockTemplates;
+};
 
 const RadioGroup: React.FC<RadioGroupProps> = ({
   label,
@@ -76,6 +110,12 @@ const BroadcastCampaignPage: React.FC = () => {
   const [optedIn, setOptedIn] = useState('yes');
   const [incomingBlocked, setIncomingBlocked] = useState('yes');
   const [readStatus, setReadStatus] = useState('read');
+  const [templates, setTemplates] = useState<TemplateOption[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
+
+  // Placeholder audience size until this is wired to actual audience calculation
+  const estimatedAudienceSize = 23;
 
   const lastSeenOptions: RadioOption[] = [
     { label: 'In 24hr', value: 'in24hr' },
@@ -109,6 +149,25 @@ const BroadcastCampaignPage: React.FC = () => {
     { label: 'All', value: 'all' },
   ];
 
+  const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) || null;
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchTemplates()
+      .then((data) => {
+        if (isMounted) {
+          setTemplates(data);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load templates:', error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -116,7 +175,7 @@ const BroadcastCampaignPage: React.FC = () => {
         <TouchableOpacity
           style={styles.backButton}
           activeOpacity={0.7}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate('Dashboard', { initialIcon: 'campaigns' })}
         >
           <ArrowLeftIcon width={24} height={24} />
           <Text style={styles.headerTitle}>Campaigns</Text>
@@ -204,21 +263,56 @@ const BroadcastCampaignPage: React.FC = () => {
                 <Text style={styles.inputLabel}>
                   Template<Text style={styles.required}>*</Text>
                 </Text>
-                <TouchableOpacity style={styles.dropdown} activeOpacity={0.7}>
-                  <Text style={styles.dropdownPlaceholder}>-Select-</Text>
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  activeOpacity={0.7}
+                  onPress={() => setIsTemplateDropdownOpen((prev) => !prev)}
+                >
+                  {selectedTemplate ? (
+                    <Text style={styles.templateName}>{selectedTemplate.name}</Text>
+                  ) : (
+                    <Text style={styles.dropdownPlaceholder}>-Select-</Text>
+                  )}
                   <Text style={styles.dropdownIcon}>▼</Text>
                 </TouchableOpacity>
+                {isTemplateDropdownOpen && (
+                  <View style={styles.dropdownMenu}>
+                    {templates.map((template) => (
+                      <TouchableOpacity
+                        key={template.id}
+                        style={[
+                          styles.dropdownItem,
+                          selectedTemplateId === template.id && styles.dropdownItemSelected,
+                        ]}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setSelectedTemplateId(template.id);
+                          setIsTemplateDropdownOpen(false);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            selectedTemplateId === template.id && styles.dropdownItemTextSelected,
+                          ]}
+                        >
+                          {template.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                    {templates.length === 0 && (
+                      <View style={styles.dropdownEmpty}>
+                        <Text style={styles.dropdownEmptyText}>No templates available</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Preview</Text>
                 <View style={styles.previewBox}>
                   <Text style={styles.previewText}>
-                    Hi User,{'\n\n'}
-                    Thanks for subscribing to our WhatsApp Newsletter.{'\n\n'}
-                    Stay tuned for more updates, trends and tactics of the latest Shravyom Marketing
-                    trends in the industry.{'\n\n'}
-                    Best Regards,{'\n'}
-                    Shravyom Technologies
+                    {selectedTemplate ? selectedTemplate.content : ''}
                   </Text>
                 </View>
               </View>
@@ -230,11 +324,22 @@ const BroadcastCampaignPage: React.FC = () => {
             <TouchableOpacity
               style={styles.backButtonAction}
               activeOpacity={0.7}
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.navigate('Dashboard', { initialIcon: 'campaigns' })}
             >
               <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.previewButton} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.previewButton}
+              activeOpacity={0.7}
+              onPress={() =>
+                navigation.navigate('BroadcastCampaignPreview', {
+                  campaignName,
+                  templateName: selectedTemplate?.name || '',
+                  templateContent: selectedTemplate?.content || '',
+                  audienceSize: estimatedAudienceSize,
+                })
+              }
+            >
               <Text style={styles.previewButtonText}>Preview</Text>
             </TouchableOpacity>
           </View>
@@ -458,9 +563,47 @@ const styles = StyleSheet.create({
     fontFamily: 'Albert Sans',
     color: '#98A2B3',
   },
+  templateName: {
+    fontSize: 14,
+    fontFamily: 'Albert Sans',
+    color: '#0C111D',
+  },
   dropdownIcon: {
     fontSize: 10,
     color: '#A0A3BD',
+  },
+  dropdownMenu: {
+    marginTop: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  dropdownItemSelected: {
+    backgroundColor: 'rgba(218, 237, 213, 0.5)',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    fontFamily: 'Albert Sans',
+    color: '#344054',
+  },
+  dropdownItemTextSelected: {
+    fontWeight: '600',
+    color: '#104502',
+  },
+  dropdownEmpty: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  dropdownEmptyText: {
+    fontSize: 12,
+    fontFamily: 'Albert Sans',
+    color: '#98A2B3',
   },
   previewBox: {
     backgroundColor: '#FCFCFD',

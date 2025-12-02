@@ -1,17 +1,18 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, ImageSourcePropType } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, ImageSourcePropType, Text } from 'react-native';
 import WLogoIcon from '../icons/WLogoIcon';
 
 interface SidebarProps {
   activeIcon?: string;
   onIconPress?: (icon: string) => void;
+  userInitial?: string;
 }
 
 const navItems: { [key: string]: ImageSourcePropType } = {
   home: require('../../../assets/images/nav_item_1.png'),
   messages: require('../../../assets/images/nav_item_2.png'),
   campaigns: require('../../../assets/images/nav_item_4.png'),
-  history: require('../../../assets/images/nav_item_3.png'),
+  contacts: require('../../../assets/images/nav_item_5.png'),
   notifications: require('../../../assets/images/nav_item_6.png'),
   settings: require('../../../assets/images/nav_item_7.png'),
   help: require('../../../assets/images/nav_item_8.png'),
@@ -35,7 +36,9 @@ const NavItem = ({
   </TouchableOpacity>
 );
 
-const Sidebar: React.FC<SidebarProps> = ({ activeIcon = 'home', onIconPress }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeIcon = 'home', onIconPress, userInitial }) => {
+  const initial = (userInitial || 'P').charAt(0).toUpperCase();
+
   return (
     <View style={styles.container}>
       {/* W Logo */}
@@ -61,9 +64,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeIcon = 'home', onIconPress }) =
           icon={navItems.campaigns}
         />
         <NavItem
-          isActive={activeIcon === 'history'}
-          onPress={() => onIconPress?.('history')}
-          icon={navItems.history}
+          isActive={activeIcon === 'contacts'}
+          onPress={() => onIconPress?.('contacts')}
+          icon={navItems.contacts}
         />
       </View>
 
@@ -90,6 +93,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeIcon = 'home', onIconPress }) =
           icon={navItems.help}
         />
       </View>
+
+      {/* Profile Avatar at bottom */}
+      <View style={styles.profileContainer}>
+        <TouchableOpacity
+          onPress={() => onIconPress?.('profile')}
+          style={[styles.profileAvatar, activeIcon === 'profile' && styles.profileAvatarActive]}
+        >
+          <Text style={styles.profileInitial}>{initial}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -98,8 +111,11 @@ const styles = StyleSheet.create({
   container: {
     width: 60,
     height: '100%',
+    alignSelf: 'stretch', // fills parent height in row layout
+    flexShrink: 0,
     backgroundColor: '#0B1A07',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     paddingTop: 24,
     paddingBottom: 24,
     gap: 24,
@@ -141,6 +157,32 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#64748B',
     width: '100%',
+  },
+  profileContainer: {
+    marginTop: 'auto',
+    paddingHorizontal: 8,
+  },
+  profileAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#A8F8FF',
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileAvatarActive: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  profileInitial: {
+    fontSize: 20,
+    fontWeight: '500',
+    color: '#0C111D',
   },
 });
 

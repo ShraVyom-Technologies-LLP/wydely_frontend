@@ -60,9 +60,29 @@ const MOCK_CONTACTS: Contact[] = [
 ];
 
 const ContactsPage: React.FC = () => {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(['2']));
+  const contactsList = MOCK_CONTACTS;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
-  const allSelected = useMemo(() => selectedIds.size === MOCK_CONTACTS.length, [selectedIds.size]);
+  const filteredContacts = React.useMemo(() => {
+    let filtered = contactsList;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((contact) =>
+        contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Filter by tab (in a real app, this would filter by status)
+    // For now, we'll just return all chats
+    return filtered;
+  }, [contactsList, searchQuery]);
+
+  const allSelected = useMemo(
+    () => selectedIds.size === filteredContacts.length,
+    [selectedIds.size]
+  );
 
   const handleToggleRow = (id: string) => {
     setSelectedIds((prev) => {
@@ -78,10 +98,10 @@ const ContactsPage: React.FC = () => {
 
   const handleToggleAll = () => {
     setSelectedIds((prev) => {
-      if (prev.size === MOCK_CONTACTS.length) {
+      if (prev.size === filteredContacts.length) {
         return new Set();
       }
-      return new Set(MOCK_CONTACTS.map((c) => c.id));
+      return new Set(filteredContacts.map((c) => c.id));
     });
   };
 
@@ -90,7 +110,7 @@ const ContactsPage: React.FC = () => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <DashboardHeader onSearchChange={() => {}} onThemeToggle={() => {}} title="Contacts" />
+      <DashboardHeader onSearchChange={setSearchQuery} onThemeToggle={() => {}} title="Contacts" />
 
       {/* Sub-header row */}
       <View style={styles.subHeader}>
@@ -147,10 +167,9 @@ const ContactsPage: React.FC = () => {
             <Text style={[styles.headerCell, styles.waStatusCol]}>WA Conversation Status</Text>
           </View>
 
-          {MOCK_CONTACTS.map((contact, index) => {
+          {filteredContacts.map((contact, index) => {
             const selected = selectedIds.has(contact.id);
-            const rowStyle =
-              index === 1 ? styles.rowSelected : index === 2 ? styles.rowSoftSelected : undefined;
+            const rowStyle = selected ? styles.rowSelected : styles.rowSoftSelected;
 
             return (
               <View key={contact.id} style={[styles.tableRow, rowStyle]}>

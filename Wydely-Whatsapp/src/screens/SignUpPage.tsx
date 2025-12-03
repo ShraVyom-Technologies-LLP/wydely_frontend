@@ -4,21 +4,19 @@ import {
   useWindowDimensions,
   Platform,
   KeyboardAvoidingView,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import colors from "../theme/colors";
-import { useSignUpForm, FormValues } from "../hooks/useSignUpForm";
-import SignUpLeftPanel from "../components/SignUpLeftPanel";
-import RightPanel from "../components/RightPanel";
-import SignUpForm from "../components/SignUpForm";
-import { RootStackParamList } from "../navigation/types";
-import { apiService } from "../services/api";
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import colors from '../theme/colors';
+import { useSignUpForm, FormValues } from '../hooks/useSignUpForm';
+import LoginLeftPanel from '../components/LoginLeftPanel';
+import RightPanel from '../components/RightPanel';
+import SignUpForm from '../components/SignUpForm';
+import { RootStackParamList } from '../navigation/types';
+import { apiService } from '../services/api';
+import { time } from 'zod/v4/core/regexes';
 
-type SignUpScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "SignUp"
->;
+type SignUpScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SignUp'>;
 
 export default function SignUpPage() {
   const { width } = useWindowDimensions();
@@ -27,42 +25,40 @@ export default function SignUpPage() {
 
   const {
     control,
-    handleSubmit: formHandleSubmit,
+    handleSubmit,
     formState: { errors, isSubmitting },
     setError,
   } = useSignUpForm();
 
   const handleLoginPress = () => {
     // Force page reload to ensure fresh SVG rendering
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
     } else {
-      navigation.navigate("Login");
+      navigation.navigate('Login');
     }
   };
 
-  const handleSignUpSubmit = formHandleSubmit(async (values: FormValues) => {
-    console.log("SignUp payload:", values);
+  const handleSignUpSubmit = handleSubmit(async (values: FormValues) => {
+    console.log('SignUp payload:', values);
 
     const result = await apiService.signUp(values);
 
     if (result.success) {
-      console.log("Signup successful:", result.data);
+      console.log('Signup successful:', result.data);
       // Navigate to OTP screen with email
       const email = values.companyEmail;
-      if (typeof window !== "undefined") {
-        window.location.href = `/otp?email=${encodeURIComponent(
-          email
-        )}&from=signup`;
+      if (typeof window !== 'undefined') {
+        window.location.href = `/otp?email=${encodeURIComponent(email)}&from=signup`;
       } else {
-        navigation.navigate("OTP", { email, from: "signup" });
+        navigation.navigate('OTP', { email, from: 'signup' });
       }
     } else {
-      console.error("Signup failed:", result.error);
+      console.error('Signup failed:', result.error);
       // Handle error - you could set a form error here
       if (result.error) {
-        setError("root", {
-          type: "manual",
+        setError('root', {
+          type: 'manual',
           message: result.error,
         });
       }
@@ -72,25 +68,19 @@ export default function SignUpPage() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.wrapper}>
         {/* Left Panel - Hero Section */}
         {isWide && (
-          <SignUpLeftPanel
+          <LoginLeftPanel
             headline="Power Your WhatsApp Marketing in Minutes"
             subheadline="Create your free account and start engaging customers on WhatsApp instantly."
-            showHero={true}
-            showPills={true}
           />
         )}
 
         {/* Right Panel - Form Section */}
         <RightPanel
-          control={control}
-          errors={errors}
-          onSubmit={handleSignUpSubmit}
-          isSubmitting={isSubmitting}
           title="Create your account with us below"
           subtitle="Already have an account?"
           loginLinkText="Login"
@@ -111,5 +101,5 @@ export default function SignUpPage() {
 
 // ------------------ Styles ------------------
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, flexDirection: "row" },
+  wrapper: { flex: 1, flexDirection: 'row' },
 });

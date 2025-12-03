@@ -1,13 +1,8 @@
 import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import FormHeader from "./FormHeader";
-import { Control, FieldErrors } from "react-hook-form";
 
 interface RightPanelProps {
-  control: Control<any>;
-  errors: FieldErrors<any>;
-  onSubmit: () => void;
-  isSubmitting: boolean;
   title: string;
   subtitle: string;
   loginLinkText: string;
@@ -16,10 +11,6 @@ interface RightPanelProps {
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({
-  control,
-  errors,
-  onSubmit,
-  isSubmitting,
   title,
   subtitle,
   loginLinkText,

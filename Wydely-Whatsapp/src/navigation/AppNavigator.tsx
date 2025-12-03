@@ -32,7 +32,7 @@ const AppNavigator = () => {
   return (
     <NavigationContainer linking={Platform.OS === 'web' ? linking : undefined}>
       <Stack.Navigator
-        initialRouteName="SignUp"
+        initialRouteName="Login"
         screenOptions={{
           headerShown: false,
           cardStyle: { flex: 1 }, // ✅ critical for web ScrollView

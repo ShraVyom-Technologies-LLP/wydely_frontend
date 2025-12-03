@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  TextInput,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import colors from '../theme/colors';
@@ -7,25 +15,99 @@ import { RootStackParamList } from '../navigation/types';
 import editIcon from '../../assets/images/edit_profile.png';
 import EyeOffIcon from './icons/EyeOffIcon';
 import EyeIcon from '../../assets/icons/eye.svg';
+import { apiService, UserAccountProfile } from '../services/api';
+import LoadingScreen from './LoadingScreen';
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'Dashboard'>;
 
-const displayName = 'Harshil';
-const email = 'Harshilbhandari1997@gmail.com';
-const whatsappNumber = '919690008019';
-const userName = 'harshilbhandari1997@gmail.com';
-const userPassword = 'arpi7890.';
-
 const MyAccountPage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const initial = displayName.charAt(0).toUpperCase();
+  const [profile, setProfile] = useState<UserAccountProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editValues, setEditValues] = useState<{
+    displayName: string;
+    userName: string;
+    password: string;
+  } | null>(null);
 
-  const displayedPassword = showPassword ? userPassword : userPassword.replace(/./g, '*');
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
+    const response = await apiService.getUserProfile();
+    if (response.success && response.data) {
+      setProfile(response.data);
+      setError(null);
+    } else {
+      setError(response.error || 'Failed to load profile');
+      setProfile(null);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  const displayName = profile?.displayName ?? '';
+  const email = profile?.email ?? '';
+  const whatsappNumber = profile?.whatsappNumber ?? '';
+  const userName = profile?.userName ?? '';
+  // We never receive password from backend; always treat it as write-only
+  const userPasswordPlaceholder = '********';
+
+  const initial = (displayName || userName || 'H').charAt(0).toUpperCase();
 
   const handleLogout = () => {
     navigation.navigate('Login');
   };
+
+  const handleEditProfile = () => {
+    if (!profile) return;
+    setEditValues({
+      displayName: profile.displayName,
+      userName: profile.userName,
+      password: '',
+    });
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+    setEditValues(null);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editValues) return;
+    setSaving(true);
+    const response = await apiService.updateUserProfile({
+      displayName: editValues.displayName,
+      userName: editValues.userName,
+      password: editValues.password,
+    });
+    if (response.success && response.data) {
+      setProfile(response.data);
+      setError(null);
+      setIsEditingProfile(false);
+      setEditValues(null);
+    } else {
+      setError(response.error || 'Failed to update profile');
+    }
+    setSaving(false);
+  };
+
+  // Show common loading / error screen until profile loads successfully
+  if (!profile || loading) {
+    return (
+      <LoadingScreen
+        message="Loading profile..."
+        error={!loading ? error : null}
+        onRetry={!loading ? fetchProfile : undefined}
+      />
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -46,6 +128,10 @@ const MyAccountPage: React.FC = () => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Profile</Text>
 
+          {error && <Text style={styles.errorText}>{error}</Text>}
+
+          {loading && !profile && <Text style={styles.helperText}>Loading profile...</Text>}
+
           {/* Company Logo / Initial */}
           <View style={styles.logoBlock}>
             <Text style={styles.logoLabel}>
@@ -58,9 +144,14 @@ const MyAccountPage: React.FC = () => {
                 <Text style={styles.logoInitial}>{initial}</Text>
               </View>
 
-              <View style={styles.logoEditBadge}>
+              <TouchableOpacity
+                onPress={() => {
+                  handleEditProfile();
+                }}
+                style={styles.logoEditBadge}
+              >
                 <Image source={editIcon} style={{ width: 24, height: 24 }} />
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -70,7 +161,21 @@ const MyAccountPage: React.FC = () => {
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>Display Name</Text>
                 <View style={styles.fieldValueContainer}>
-                  <Text style={styles.fieldValue}>{displayName}</Text>
+                  {isEditingProfile ? (
+                    <TextInput
+                      style={styles.editInput}
+                      value={editValues?.displayName ?? ''}
+                      onChangeText={(text) =>
+                        setEditValues((prev) =>
+                          prev
+                            ? { ...prev, displayName: text }
+                            : { displayName: text, userName, password: '' }
+                        )
+                      }
+                    />
+                  ) : (
+                    <Text style={styles.fieldValue}>{displayName}</Text>
+                  )}
                 </View>
               </View>
               <View style={styles.field}>
@@ -93,9 +198,23 @@ const MyAccountPage: React.FC = () => {
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>User Name</Text>
                 <View style={styles.fieldValueContainer}>
-                  <Text style={styles.fieldValue} numberOfLines={1} ellipsizeMode="tail">
-                    {userName}
-                  </Text>
+                  {isEditingProfile ? (
+                    <TextInput
+                      style={styles.editInput}
+                      value={editValues?.userName ?? ''}
+                      onChangeText={(text) =>
+                        setEditValues((prev) =>
+                          prev
+                            ? { ...prev, userName: text }
+                            : { displayName, userName: text, password: '' }
+                        )
+                      }
+                    />
+                  ) : (
+                    <Text style={styles.fieldValue} numberOfLines={1} ellipsizeMode="tail">
+                      {userName}
+                    </Text>
+                  )}
                 </View>
               </View>
             </View>
@@ -104,9 +223,24 @@ const MyAccountPage: React.FC = () => {
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>Password</Text>
                 <View style={styles.passwordContainer}>
-                  <Text style={styles.fieldValue} numberOfLines={1} ellipsizeMode="tail">
-                    {displayedPassword}
-                  </Text>
+                  {isEditingProfile ? (
+                    <TextInput
+                      style={styles.editInput}
+                      value={editValues?.password ?? ''}
+                      secureTextEntry={!showPassword}
+                      onChangeText={(text) =>
+                        setEditValues((prev) =>
+                          prev
+                            ? { ...prev, password: text }
+                            : { displayName, userName, password: text }
+                        )
+                      }
+                    />
+                  ) : (
+                    <Text style={styles.fieldValue} numberOfLines={1} ellipsizeMode="tail">
+                      {userPasswordPlaceholder}
+                    </Text>
+                  )}
                   <TouchableOpacity
                     onPress={() => setShowPassword((prev) => !prev)}
                     style={styles.passwordIconButton}
@@ -121,6 +255,25 @@ const MyAccountPage: React.FC = () => {
               </View>
               <View style={styles.fieldPlaceholder} />
             </View>
+
+            {isEditingProfile && (
+              <View style={styles.actionsRow}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.cancelButton]}
+                  onPress={handleCancelEdit}
+                  disabled={saving}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.saveButton]}
+                  onPress={handleSaveProfile}
+                  disabled={saving}
+                >
+                  <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -264,6 +417,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#344054',
   },
+  editInput: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#344054',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+  },
   passwordContainer: {
     height: 44,
     borderRadius: 10,
@@ -275,6 +436,48 @@ const styles = StyleSheet.create({
   },
   passwordIconButton: {
     paddingLeft: 8,
+  },
+  errorText: {
+    marginBottom: 16,
+    fontSize: 12,
+    color: colors.error,
+  },
+  helperText: {
+    marginBottom: 16,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  actionsRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  actionButton: {
+    minWidth: 80,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    backgroundColor: '#FFFFFF',
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+  },
+  cancelButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
+  saveButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#FFFFFF',
   },
 });
 

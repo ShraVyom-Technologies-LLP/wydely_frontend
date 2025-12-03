@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,18 @@ import {
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
-  TouchableOpacity,
-} from "react-native";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
-import colors from "../theme/colors";
-import SignUpLeftPanel from "../components/SignUpLeftPanel";
-import OTPInput from "../components/OTPInput";
-import { RootStackParamList } from "../navigation/types";
+} from 'react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { Controller, useForm } from 'react-hook-form';
+import colors from '../theme/colors';
+import LoginLeftPanel from '../components/LoginLeftPanel';
+import OTPInput from '../components/OTPInput';
+import { RootStackParamList } from '../navigation/types';
+import { apiService } from '../services/api';
 
-type OTPScreenNavigationProp = StackNavigationProp<RootStackParamList, "OTP">;
-type OTPScreenRouteProp = RouteProp<RootStackParamList, "OTP">;
+type OTPScreenNavigationProp = StackNavigationProp<RootStackParamList, 'OTP'>;
+type OTPScreenRouteProp = RouteProp<RootStackParamList, 'OTP'>;
 
 type FormValues = {
   otp: string;
@@ -37,16 +36,16 @@ export default function OTPVerificationPage({ handleBack }: Props) {
   const route = useRoute<OTPScreenRouteProp>();
 
   // Get email and from params, also check URL params for web
-  let email = route.params?.email || "your email";
+  let email = route.params?.email || 'your email';
   let from = route.params?.from;
 
   // For web, also check URL query parameters
-  if (typeof window !== "undefined" && !from) {
+  if (typeof window !== 'undefined' && !from) {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlEmail = urlParams.get("email");
-    const urlFrom = urlParams.get("from");
+    const urlEmail = urlParams.get('email');
+    const urlFrom = urlParams.get('from');
     if (urlEmail) email = urlEmail;
-    if (urlFrom === "login" || urlFrom === "signup") {
+    if (urlFrom === 'login' || urlFrom === 'signup') {
       from = urlFrom;
     }
   }
@@ -61,86 +60,72 @@ export default function OTPVerificationPage({ handleBack }: Props) {
     watch,
   } = useForm<FormValues>({
     defaultValues: {
-      otp: "",
+      otp: '',
     },
-    mode: "onBlur",
+    mode: 'onBlur',
   });
 
-  const otpValue = watch("otp");
+  const otpValue = watch('otp');
+
+  const navigateTo = (webPath: string, screen: 'Login' | 'SignUp') => {
+    if (typeof window !== 'undefined') {
+      window.location.href = webPath;
+    } else {
+      navigation.navigate(screen);
+    }
+  };
 
   const handleBackPress = () => {
     if (handleBack) {
       handleBack();
       return;
     }
-
-    // Navigate back based on where the user came from
-    if (from === "login") {
-      // Came from login page, go back to login
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      } else {
-        navigation.navigate("Login");
-      }
-    } else if (from === "signup") {
-      // Came from signup page, go back to signup
-      if (typeof window !== "undefined") {
-        window.location.href = "/signup";
-      } else {
-        navigation.navigate("SignUp");
-      }
+    if (from === 'signup') {
+      navigateTo('/signup', 'SignUp');
     } else {
-      // Default fallback to login if source is unknown
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      } else {
-        navigation.navigate("Login");
-      }
+      // default + 'login' both go to login
+      navigateTo('/login', 'Login');
     }
   };
 
   const handleResend = async () => {
-    if (resendCooldown > 0) return;
+    if (isResending || resendCooldown > 0) return;
 
     setIsResending(true);
-    // TODO: Implement resend OTP API call
-    console.log("Resending OTP to:", email);
 
-    // Set cooldown timer (60 seconds)
-    setResendCooldown(60);
-    const interval = setInterval(() => {
-      setResendCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const response = await apiService.resendOtp(email);
+    if (response.success) {
+      setResendCooldown(60);
+      const interval = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
 
     setIsResending(false);
   };
 
-  const onSubmit = async (values: FormValues) => {
-    console.log("OTP submitted:", values.otp);
-    // TODO: Implement OTP verification API call
-    // On success, navigate to dashboard or next screen
-    navigation.navigate("Dashboard");
+  const onSubmit = async (_values: FormValues) => {
+    // TODO: Implement OTP verification API call and handle errors
+    navigation.navigate('Dashboard');
   };
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.wrapper}>
         {/* Left Panel - Hero Section */}
         {isWide && (
-          <SignUpLeftPanel
+          <LoginLeftPanel
             headline="Power Your WhatsApp Marketing in Minutes"
             subheadline="Create your free account and start engaging customers on WhatsApp instantly."
-            showHero={true}
-            showPills={true}
           />
         )}
 
@@ -161,8 +146,7 @@ export default function OTPVerificationPage({ handleBack }: Props) {
             {/* Email info */}
             <View style={styles.contentContainer}>
               <Text style={styles.emailText}>
-                We sent a code to{" "}
-                <Text style={styles.emailHighlight}>{email}</Text>
+                We sent a code to <Text style={styles.emailHighlight}>{email}</Text>
               </Text>
 
               {/* OTP Input */}
@@ -175,7 +159,7 @@ export default function OTPVerificationPage({ handleBack }: Props) {
                       value={value}
                       onChangeText={(newValue) => {
                         onChange(newValue);
-                        setValue("otp", newValue, { shouldValidate: true });
+                        setValue('otp', newValue, { shouldValidate: true });
                       }}
                       error={errors.otp?.message}
                     />
@@ -188,13 +172,12 @@ export default function OTPVerificationPage({ handleBack }: Props) {
                   disabled={isSubmitting || otpValue.length !== 6}
                   style={({ pressed }) => [
                     styles.submitButton,
-                    (isSubmitting || otpValue.length !== 6) &&
-                      styles.submitButtonDisabled,
+                    (isSubmitting || otpValue.length !== 6) && styles.submitButtonDisabled,
                     pressed && { opacity: 0.95 },
                   ]}
                 >
                   <Text style={styles.submitButtonText}>
-                    {isSubmitting ? "Verifying..." : "Submit"}
+                    {isSubmitting ? 'Verifying...' : 'Submit'}
                   </Text>
                 </Pressable>
 
@@ -202,19 +185,15 @@ export default function OTPVerificationPage({ handleBack }: Props) {
                 <View style={styles.resendContainer}>
                   {resendCooldown > 0 ? (
                     <Text style={styles.resendText}>
-                      <Text style={styles.resendTextActive}>
-                        Didn't receive code?{" "}
-                      </Text>
+                      <Text style={styles.resendTextActive}>Didn't receive code? </Text>
                       <Text style={styles.resendTextGrey}>Resend OTP in </Text>
                       <Text style={styles.resendCountdown}>
-                        00:{String(resendCooldown).padStart(2, "0")}
+                        00:{String(resendCooldown).padStart(2, '0')}
                       </Text>
                     </Text>
                   ) : (
                     <Text style={styles.resendText}>
-                      <Text style={styles.resendTextGrey}>
-                        Didn't receive code?{" "}
-                      </Text>
+                      <Text style={styles.resendTextGrey}>Didn't receive code? </Text>
                       <Text style={styles.resendLink} onPress={handleResend}>
                         RESEND
                       </Text>
@@ -233,7 +212,7 @@ export default function OTPVerificationPage({ handleBack }: Props) {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    flexDirection: "row",
+    flexDirection: 'row',
   },
   right: {
     flex: 1,
@@ -241,37 +220,37 @@ const styles = StyleSheet.create({
   },
   rightScroll: {
     flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 8,
   },
   header: {
-    width: "100%",
+    width: '100%',
     maxWidth: 630,
     marginBottom: 32,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 16,
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backIcon: {
     fontSize: 32,
     color: colors.text,
-    fontWeight: "200",
+    fontWeight: '200',
   },
   title: {
     fontSize: 32,
-    fontWeight: "600",
+    fontWeight: '600',
     color: colors.text,
     lineHeight: 41,
   },
   contentContainer: {
-    width: "100%",
+    width: '100%',
     maxWidth: 630,
     gap: 40,
   },
@@ -282,20 +261,20 @@ const styles = StyleSheet.create({
   },
   emailHighlight: {
     color: colors.link,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   formContainer: {
-    width: "100%",
+    width: '100%',
   },
   submitButton: {
     backgroundColor: colors.primary,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     minHeight: 52,
-    width: "95%",
+    width: '95%',
     marginTop: 32,
   },
   submitButtonDisabled: {
@@ -303,12 +282,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   resendContainer: {
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 10,
   },
   resendText: {
@@ -317,17 +296,17 @@ const styles = StyleSheet.create({
   },
   resendTextActive: {
     color: colors.link, // Green
-    fontWeight: "600",
+    fontWeight: '600',
   },
   resendTextGrey: {
     color: colors.textSecondary, // Grey
   },
   resendLink: {
     color: colors.link, // Green
-    fontWeight: "600",
+    fontWeight: '600',
   },
   resendCountdown: {
-    color: "#FF6B00", // Orange
-    fontWeight: "600",
+    color: '#FF6B00', // Orange
+    fontWeight: '600',
   },
 });

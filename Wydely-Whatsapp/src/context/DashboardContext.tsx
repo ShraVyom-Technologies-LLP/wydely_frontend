@@ -93,16 +93,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const sendMessage = useCallback(
     async (chatId: string, text: string) => {
       if (!text.trim()) return;
+      const response = await chatApi.sendMessage(chatId, text);
 
       const newMessage: Message = {
-        id: `msg-${Date.now()}`,
-        text: text.trim(),
-        timestamp: new Date().toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        }),
+        id: response.id,
+        text: response.text,
+        timestamp: response.timestamp,
         isFromUser: true,
+        status: response.status,
       };
 
       // Optimistically add message

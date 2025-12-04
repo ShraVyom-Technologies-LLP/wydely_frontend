@@ -8,18 +8,21 @@ import {
   TouchableOpacity,
   Image,
   ImageBackground,
-  ImageSourcePropType,
 } from 'react-native';
 import colors from '../../../theme/colors';
-import DoubleCheckIcon from '../../icons/DoubleCheckIcon';
+import { StatusIndicator } from './ChatListPanel';
 
 export interface Message {
   id: string;
   text: string;
   timestamp: string;
   isFromUser: boolean;
-  senderAvatar?: ImageSourcePropType;
-  actionIcon?: ImageSourcePropType;
+  status:
+    | 'RECEIVED_READ'
+    | 'SENT_DELIVERED_READ'
+    | 'SENT_DELIVERED_UNREAD'
+    | 'SENT_UNDELIVERED'
+    | 'RECEIVED_UNREAD';
 }
 
 interface ChatPanelProps {
@@ -102,10 +105,6 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
 
   return (
     <View style={[styles.messageRow, isFromUser ? styles.messageRowUser : styles.messageRowOther]}>
-      {!isFromUser && message.senderAvatar && (
-        <Image source={message.senderAvatar} style={styles.avatar} />
-      )}
-
       <View style={styles.messageContent}>
         <View
           style={[
@@ -123,14 +122,10 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
           </Text>
         </View>
         <View style={[styles.timestampRow, isFromUser && styles.timestampRowUser]}>
-          {isFromUser && <DoubleCheckIcon width={14} height={8} color={colors.checkmark} />}
+          {isFromUser && message.status && <StatusIndicator lastMessageStatus={message.status} />}
           <Text style={styles.timestamp}>{message.timestamp}</Text>
         </View>
       </View>
-
-      {isFromUser && message.actionIcon && (
-        <Image source={message.actionIcon} style={styles.actionIcon} />
-      )}
     </View>
   );
 };

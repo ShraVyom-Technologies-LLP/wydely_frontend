@@ -40,6 +40,7 @@ const colors = {
   tabText: '#667085', // Grey for tab text
   chatItemActive: '#E8F5E9', // Light green for active chat item
   checkmark: '#27AE60', // Green 2 for checkmarks from Figma
+  checkmarkSecondary: '#98A2B3', // grey for checkmarks from Figma
 };
 
 export default colors;

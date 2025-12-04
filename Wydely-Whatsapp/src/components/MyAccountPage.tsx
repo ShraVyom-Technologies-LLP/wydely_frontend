@@ -228,6 +228,7 @@ const MyAccountPage: React.FC = () => {
                       style={styles.editInput}
                       value={editValues?.password ?? ''}
                       secureTextEntry={!showPassword}
+                      placeholder={userPasswordPlaceholder}
                       onChangeText={(text) =>
                         setEditValues((prev) =>
                           prev
@@ -421,7 +422,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: '#344054',
+    color: '#9fa3ab',
     paddingVertical: 0,
     paddingHorizontal: 0,
   },

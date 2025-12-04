@@ -12,13 +12,6 @@ import {
 import Svg, { Circle, Line, Path, G } from 'react-native-svg';
 import colors from '../../../theme/colors';
 
-// Import avatar SVGs as components
-// Note: Path goes from src/components/dashboard/ up to project root, then to assets/
-import Avatar1SVG from '../../../../assets/images/avatar-1.svg';
-import Avatar2SVG from '../../../../assets/images/avatar-1.svg';
-import Avatar3SVG from '../../../../assets/images/avatar-1.svg';
-import Avatar4SVG from '../../../../assets/images/avatar-1.svg';
-
 const isMobile = () => Dimensions.get('window').width < 768;
 
 export interface ChatItem {
@@ -27,10 +20,13 @@ export interface ChatItem {
   lastMessage: string;
   timestamp: string;
   unreadCount?: number;
-  avatar?: ImageSourcePropType;
-  avatarId?: string; // For identifying which SVG to use (e.g., 'avatar-1', 'avatar-2')
   isOnline?: boolean;
-  status?: 'double-check' | 'single-check' | 'check' | 'unread';
+  lastMessageStatus?:
+    | 'SENT_DELIVERED_READ'
+    | 'SENT_DELIVERED_UNREAD'
+    | 'SENT_UNDELIVERED'
+    | 'RECEIVED_UNREAD'
+    | 'RECEIVED_READ';
 }
 
 interface ChatListPanelProps {
@@ -50,7 +46,6 @@ const OnlineIndicator = () => (
 
 // Avatar component with online status
 const Avatar = ({
-  avatarId,
   name,
   isOnline,
 }: {
@@ -59,45 +54,27 @@ const Avatar = ({
   name: string;
   isOnline?: boolean;
 }) => {
-  // Try to get SVG component if available
-  const getSVGComponent = () => {
-    if (avatarId === 'avatar-1' || avatarId === '1') return Avatar1SVG;
-    if (avatarId === 'avatar-2' || avatarId === '2') return Avatar2SVG;
-    if (avatarId === 'avatar-3' || avatarId === '3') return Avatar3SVG;
-    if (avatarId === 'avatar-4' || avatarId === '4') return Avatar4SVG;
-    return null;
-  };
-
-  const AvatarSVG = getSVGComponent();
+  // Try to get SVG component if available using the source
   const initial = name && name.length > 0 ? name.charAt(0).toUpperCase() : '?';
-
-  // Temporarily disable SVG rendering to show initials
-  const useSVG = false; // Set to true when SVG images are fixed
 
   return (
     <View style={styles.avatarWrapper}>
-      {AvatarSVG && useSVG ? (
-        <View style={styles.svgContainer}>
-          <AvatarSVG width={36} height={36} />
-        </View>
-      ) : (
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>{initial}</Text>
-        </View>
-      )}
+      <View style={styles.avatarPlaceholder}>
+        <Text style={styles.avatarText}>{initial}</Text>
+      </View>
       {isOnline && <OnlineIndicator />}
     </View>
   );
 };
 
 // Double check icon
-const DoubleCheckIcon = () => (
+const DoubleCheckIcon = ({ tintColor }: { tintColor: string }) => (
   <Svg width="14" height="14" viewBox="0 0 14 14">
     <G>
       <Path
         d="M4.08341 7.00008L6.41675 9.33341L12.2501 3.50008M1.75008 7.00008L4.08341 9.33341M9.33341 3.50008L7.58341 5.25008"
         fill="none"
-        stroke="#27AE60"
+        stroke={tintColor}
         strokeWidth="1.16667"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -113,24 +90,8 @@ const SingleCheckIcon = () => (
       <Path
         d="M11.6666 3.5L4.66663 10.5L1.33329 7.16667"
         fill="none"
-        stroke="#27AE60"
+        stroke={colors.checkmarkSecondary}
         strokeWidth="1.16667"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </G>
-  </Svg>
-);
-
-// White check icon (read status)
-const WhiteCheckIcon = () => (
-  <Svg width="12" height="12" viewBox="0 0 12 12">
-    <G>
-      <Path
-        d="M10 3L4 9L1 6"
-        fill="none"
-        stroke="white"
-        strokeWidth="1"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -145,19 +106,25 @@ const UnreadBadge = ({ count }: { count: number }) => (
   </View>
 );
 
-// Status indicator
-const StatusIndicator = ({ status, unreadCount }: { status?: string; unreadCount?: number }) => {
-  if (status === 'unread' && unreadCount) {
+// lastMessageStatus indicator
+export const StatusIndicator = ({
+  lastMessageStatus,
+  unreadCount,
+}: {
+  lastMessageStatus?: string;
+  unreadCount?: number;
+}) => {
+  if (lastMessageStatus === 'RECEIVED_UNREAD' && unreadCount) {
     return <UnreadBadge count={unreadCount} />;
   }
-  if (status === 'double-check') {
-    return <DoubleCheckIcon />;
+  if (lastMessageStatus === 'SENT_DELIVERED_READ') {
+    return <DoubleCheckIcon tintColor={colors.checkmark} />;
   }
-  if (status === 'single-check') {
+  if (lastMessageStatus === 'SENT_DELIVERED_UNREAD') {
+    return <DoubleCheckIcon tintColor={colors.checkmarkSecondary} />;
+  }
+  if (lastMessageStatus === 'SENT_UNDELIVERED') {
     return <SingleCheckIcon />;
-  }
-  if (status === 'check') {
-    return <WhiteCheckIcon />;
   }
   return null;
 };
@@ -205,7 +172,10 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ chats, selectedChatId, on
                     <View style={styles.rightSection}>
                       <Text style={styles.time}>{chat.timestamp}</Text>
                       <View style={styles.statusContainer}>
-                        <StatusIndicator status={chat.status} unreadCount={chat.unreadCount} />
+                        <StatusIndicator
+                          lastMessageStatus={chat.lastMessageStatus}
+                          unreadCount={chat.unreadCount}
+                        />
                       </View>
                     </View>
                   </View>

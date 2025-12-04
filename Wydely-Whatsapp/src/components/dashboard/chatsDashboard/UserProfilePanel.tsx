@@ -9,13 +9,13 @@ export interface UserProfile {
   name: string;
   phone: string;
   avatar?: string;
-  status: string;
-  lastActive: string;
-  templateMessages: number;
-  sessionMessages: number;
-  source: string;
-  mauStatus: string;
-  incoming: string;
+  status?: string;
+  lastActive?: string;
+  templateMessages?: number;
+  sessionMessages?: number;
+  source?: string;
+  mauStatus?: string;
+  incoming?: string;
 }
 
 interface UserProfilePanelProps {

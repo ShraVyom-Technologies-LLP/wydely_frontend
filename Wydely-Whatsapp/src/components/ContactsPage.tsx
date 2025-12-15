@@ -1,76 +1,37 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import colors from '../theme/colors';
 import DashboardHeader from './dashboard/chatsDashboard/DashboardHeader';
-
-type Contact = {
-  id: string;
-  name: string;
-  mobileNumber: string;
-  tags: string;
-  source: string;
-  status: 'Inactive' | 'Active';
-  state: string;
-  lastActive: string;
-  optedIn: 'Yes' | 'No' | '-';
-  mauStatus: 'Active' | 'Inactive';
-  conversationStatus: 'Active' | 'Inactive';
-};
-
-const MOCK_CONTACTS: Contact[] = [
-  {
-    id: '1',
-    name: 'Gungun jangra',
-    mobileNumber: '919634272019',
-    tags: 'Bagwell Avenue Ocala',
-    source: 'WA Business App',
-    status: 'Inactive',
-    state: 'Handled by Assistant',
-    lastActive: '12:34, 29 Sep 2025',
-    optedIn: 'Yes',
-    mauStatus: 'Inactive',
-    conversationStatus: 'Inactive',
-  },
-  {
-    id: '2',
-    name: 'Rajan Gupta',
-    mobileNumber: '919414360211',
-    tags: 'Washburn Baton Rouge',
-    source: 'Organic',
-    status: 'Inactive',
-    state: 'Handled by Assistant',
-    lastActive: '12:34, 29 Sep 2025',
-    optedIn: 'No',
-    mauStatus: 'Active',
-    conversationStatus: 'Inactive',
-  },
-  {
-    id: '3',
-    name: 'Abhishek Bajaj',
-    mobileNumber: '919827838928',
-    tags: 'Nest Lane Olivette',
-    source: 'WA Business App',
-    status: 'Inactive',
-    state: 'Handled by Assistant',
-    lastActive: '-',
-    optedIn: 'Yes',
-    mauStatus: 'Active',
-    conversationStatus: 'Inactive',
-  },
-];
+import CreateCampaignSidePanel from './CreateCampaignSidePanel';
+import AddContactSidePanel from './AddContactSidePanel';
+import { apiService, Contact } from '../services/api';
 
 const ContactsPage: React.FC = () => {
-  const contactsList = MOCK_CONTACTS;
+  const [contactsList, setContactsList] = useState<Contact[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [isBroadcastPanelOpen, setIsBroadcastPanelOpen] = useState(false);
+  const [isAddContactPanelOpen, setIsAddContactPanelOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchContacts = async () => {
+      const result = await apiService.getContacts();
+      if (result.success) {
+        setContactsList(result.data ?? []);
+      }
+    };
+    fetchContacts();
+  }, []);
 
   const filteredContacts = React.useMemo(() => {
     let filtered = contactsList;
 
     // Filter by search query
     if (searchQuery.trim()) {
-      filtered = filtered.filter((contact) =>
-        contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (contact) =>
+          contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          contact.mobileNumber.includes(searchQuery)
       );
     }
 
@@ -80,8 +41,8 @@ const ContactsPage: React.FC = () => {
   }, [contactsList, searchQuery]);
 
   const allSelected = useMemo(
-    () => selectedIds.size === filteredContacts.length,
-    [selectedIds.size]
+    () => selectedIds.size === filteredContacts.length && filteredContacts.length > 0,
+    [selectedIds.size, filteredContacts.length]
   );
 
   const handleToggleRow = (id: string) => {
@@ -106,6 +67,22 @@ const ContactsPage: React.FC = () => {
   };
 
   const selectedCount = selectedIds.size;
+
+  const openBroadcastPanel = () => {
+    setIsBroadcastPanelOpen(true);
+  };
+
+  const closeBroadcastPanel = () => {
+    setIsBroadcastPanelOpen(false);
+  };
+
+  const openAddContactPanel = () => {
+    setIsAddContactPanelOpen(true);
+  };
+
+  const closeAddContactPanel = () => {
+    setIsAddContactPanelOpen(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -132,11 +109,15 @@ const ContactsPage: React.FC = () => {
             </View>
           )}
 
-          <TouchableOpacity style={styles.broadcastButton}>
+          <TouchableOpacity
+            style={styles.broadcastButton}
+            onPress={openBroadcastPanel}
+            disabled={selectedCount === 0}
+          >
             <Text style={styles.broadcastButtonText}>Broadcast</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.addContactButton}>
+          <TouchableOpacity style={styles.addContactButton} onPress={openAddContactPanel}>
             <Text style={styles.addContactButtonText}>+ Add Contact</Text>
           </TouchableOpacity>
         </View>
@@ -167,7 +148,7 @@ const ContactsPage: React.FC = () => {
             <Text style={[styles.headerCell, styles.waStatusCol]}>WA Conversation Status</Text>
           </View>
 
-          {filteredContacts.map((contact, index) => {
+          {filteredContacts.map((contact) => {
             const selected = selectedIds.has(contact.id);
             const rowStyle = selected ? styles.rowSelected : styles.rowSoftSelected;
 
@@ -218,6 +199,10 @@ const ContactsPage: React.FC = () => {
           })}
         </View>
       </ScrollView>
+
+      {/* Right slide-in panels */}
+      <CreateCampaignSidePanel isOpen={isBroadcastPanelOpen} onClose={closeBroadcastPanel} />
+      <AddContactSidePanel isOpen={isAddContactPanelOpen} onClose={closeAddContactPanel} />
     </View>
   );
 };
@@ -427,6 +412,286 @@ const styles = StyleSheet.create({
   },
   waStatusCol: {
     width: 166,
+  },
+  sidePanelOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.25)',
+  },
+  sidePanel: {
+    width: 900,
+    maxWidth: '100%',
+    height: '100%',
+    backgroundColor: '#F9FBFC',
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    shadowOffset: { width: -8, height: 0 },
+    elevation: 8,
+    paddingHorizontal: 32,
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  sidePanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAECF0',
+  },
+  sidePanelTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  sidePanelCloseButton: {
+    padding: 4,
+    color: '#EAECF0', //grey light
+  },
+  sidePanelCloseIcon: {
+    fontSize: 20,
+    color: colors.text,
+  },
+  sidePanelScroll: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  sidePanelScrollContent: {
+    paddingBottom: 24,
+    paddingTop: 24,
+    paddingHorizontal: 8,
+    gap: 24,
+  },
+  fieldGroup: {
+    width: '100%',
+    gap: 8,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  fieldRequired: {
+    color: colors.error,
+  },
+  fieldInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: '#FFFFFF',
+  },
+  previewInput: {
+    height: 140,
+  },
+  selectInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    height: 44,
+  },
+  selectPlaceholder: {
+    fontSize: 14,
+    color: colors.textLight,
+  },
+  selectChevron: {
+    fontSize: 16,
+    color: colors.textLight,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+  },
+  toggleSwitch: {
+    width: 40,
+    height: 22,
+    borderRadius: 12,
+    backgroundColor: '#D0D5DD',
+    paddingHorizontal: 2,
+    justifyContent: 'center',
+  },
+  toggleSwitchOn: {
+    backgroundColor: colors.primary,
+  },
+  toggleThumb: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FFFFFF',
+    transform: [{ translateX: 0 }],
+  },
+  toggleThumbOn: {
+    transform: [{ translateX: 16 }],
+  },
+  toggleLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  sectionGroup: {
+    gap: 12,
+    marginTop: 16,
+  },
+  fieldLabelInline: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  startDateRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  startDateCol: {
+    flex: 1,
+  },
+  testSection: {
+    gap: 16,
+  },
+  testDividerTop: {
+    borderBottomWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#D0D5DD',
+    marginVertical: 12,
+  },
+  testDividerBottom: {
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#D0D5DD',
+    marginTop: 12,
+  },
+  testRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 80,
+    marginTop: 24,
+  },
+  testLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  testInputsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+  },
+  testInputWrapper: {
+    flex: 1,
+  },
+  testInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: colors.text,
+    width: 215,
+  },
+  testSendButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+    width: 100,
+    alignItems: 'center',
+  },
+  testSendButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+  },
+  costRow: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: '#F5F7F9',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  costLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  costValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  excludeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  excludeTextContainer: {
+    flex: 1,
+  },
+  excludeTitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  excludeDescription: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  sidePanelFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#D0D5DD',
+  },
+  footerCancelButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#344054',
+    minWidth: 168,
+    alignItems: 'center',
+  },
+  footerCancelText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  footerPrimaryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    minWidth: 168,
+    alignItems: 'center',
+  },
+  footerPrimaryText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+  },
+  sidePanelContent: {
+    gap: 24,
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+    backgroundColor: '#FFFFFF',
   },
 });
 

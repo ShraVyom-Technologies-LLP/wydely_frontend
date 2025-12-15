@@ -4,6 +4,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
+import ApiService from '../services/api';
+import { TemplateOption } from '../services/api';
+
+const api = new ApiService();
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -20,38 +24,11 @@ interface RadioGroupProps {
   showInfo?: boolean;
 }
 
-interface TemplateOption {
-  id: string;
-  name: string;
-  content: string;
-}
-
-// Mock templates as if they were returned from an API
-const mockTemplates: TemplateOption[] = [
-  {
-    id: 'welcome_newsletter',
-    name: 'Welcome Newsletter',
-    content:
-      "Hi {{name}},\n\nThanks for subscribing to our WhatsApp Newsletter.\n\nWe'll send you the latest updates, trends, and tactics from Shravyom Marketing straight to your WhatsApp.\n\nBest Regards,\nShravyom Technologies",
-  },
-  {
-    id: 'abandoned_cart',
-    name: 'Abandoned Cart Reminder',
-    content:
-      'Hi {{name}},\n\nYou left some amazing products in your cart.\nComplete your purchase now to avoid missing out.\n\nReply HELP if you have any questions.\n\nBest,\nShravyom Technologies',
-  },
-  {
-    id: 'promo_festive',
-    name: 'Festive Offer',
-    content:
-      'Hello {{name}},\n\nEnjoy our Festive Offer with flat 20% OFF on all products.\nUse code FESTIVE20 at checkout.\n\nOffer valid till {{date}}.\n\nWarm Regards,\nShravyom Technologies',
-  },
-];
-
 // Simulated API call for templates
 const fetchTemplates = async (): Promise<TemplateOption[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 300));
-  return mockTemplates;
+  const response = await api.getTemplates();
+  console.log('response', response);
+  return response?.data || [];
 };
 
 const RadioGroup: React.FC<RadioGroupProps> = ({
@@ -408,7 +385,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   badge: {
-    backgroundColor: '#A98CFF',
+    backgroundColor: '#6898FF',
     paddingHorizontal: 13,
     paddingVertical: 5,
     borderRadius: 8,

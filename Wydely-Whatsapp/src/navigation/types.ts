@@ -2,7 +2,7 @@
 export type RootStackParamList = {
   SignUp: undefined;
   Login: undefined;
-  OTP: { email: string; from?: 'login' | 'signup' };
+  OTP: { email: string; phoneNumber: string; from?: 'login' | 'signup' };
   Dashboard: { initialIcon?: string; userName?: string } | undefined;
   Profile: undefined;
   BroadcastCampaign: undefined;
@@ -12,6 +12,8 @@ export type RootStackParamList = {
     templateContent: string;
     audienceSize?: number | string;
   };
+  ExistingCampaigns: undefined;
+  CreateCampaigns: undefined;
   // Add more screens as needed
 };
 
@@ -24,4 +26,6 @@ export const SCREENS = {
   PROFILE: 'Profile',
   BROADCAST_CAMPAIGN: 'BroadcastCampaign',
   BROADCAST_CAMPAIGN_PREVIEW: 'BroadcastCampaignPreview',
+  EXISTING_CAMPAIGNS: 'ExistingCampaigns',
+  CREATE_CAMPAIGNS: 'CreateCampaigns',
 } as const;

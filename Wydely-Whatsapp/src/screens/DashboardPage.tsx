@@ -16,11 +16,11 @@ import ChatTabs from '../components/dashboard/chatsDashboard/ChatTabs';
 import ChatListPanel from '../components/dashboard/chatsDashboard/ChatListPanel';
 import UserProfilePanel from '../components/dashboard/chatsDashboard/UserProfilePanel';
 import ChatPanel from '../components/dashboard/chatsDashboard/ChatPanel';
-import CampaignsPage from '../components/CampaignsPage';
 import ContactsPage from '../components/ContactsPage';
 import MyAccountPage from '../components/MyAccountPage';
 import colors from '../theme/colors';
 import { RootStackParamList } from '../navigation/types';
+import ExistingCampaignsPage from '../components/ExistingCampaignsPage';
 
 // Placeholder components for other pages
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -202,7 +202,7 @@ export default function DashboardPage() {
       case 'messages':
         return renderMessagesPage();
       case 'campaigns':
-        return <CampaignsPage />;
+        return <ExistingCampaignsPage />;
       case 'contacts':
         return <ContactsPage />;
       case 'profile':

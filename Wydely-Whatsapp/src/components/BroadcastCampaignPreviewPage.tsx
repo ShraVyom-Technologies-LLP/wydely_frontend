@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   badge: {
-    backgroundColor: '#A98CFF',
+    backgroundColor: '#6898FF',
     paddingHorizontal: 13,
     paddingVertical: 5,
     borderRadius: 8,

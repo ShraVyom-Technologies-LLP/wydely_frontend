@@ -14,6 +14,7 @@ import LoginLeftPanel from '../components/LoginLeftPanel';
 import RightPanel from '../components/RightPanel';
 import LoginForm from '../components/LoginForm';
 import { RootStackParamList } from '../navigation/types';
+import { apiService } from '../services/api';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -25,7 +26,6 @@ export default function LoginPage() {
   const {
     control,
     formState: { errors, isSubmitting },
-    onSubmit,
     getValues,
     setError,
     clearErrors,
@@ -40,9 +40,17 @@ export default function LoginPage() {
     }
   };
 
-  const handleLoginSuccess = () => {
+  const handleLoginSubmit = async () => {
     // Navigate to dashboard after successful login
-    navigation.navigate('Dashboard');
+    const result = await apiService.login(
+      getValues('email')?.trim() || '',
+      getValues('password')?.trim() || ''
+    );
+    if (result.success) {
+      navigation.navigate('Dashboard');
+    } else {
+      console.error('Login failed:', result.error);
+    }
   };
 
   const handleLoginViaOTP = () => {
@@ -75,7 +83,7 @@ export default function LoginPage() {
     if (typeof window !== 'undefined') {
       window.location.href = `/otp?email=${encodeURIComponent(emailValue)}&from=login`;
     } else {
-      navigation.navigate('OTP', { email: emailValue, from: 'login' });
+      navigation.navigate('OTP', { email: emailValue, phoneNumber: '', from: 'login' });
     }
   };
 
@@ -103,7 +111,7 @@ export default function LoginPage() {
             <LoginForm
               control={control}
               errors={errors}
-              onSubmit={onSubmit}
+              onSubmit={handleLoginSubmit}
               isSubmitting={isSubmitting}
               onLoginViaOTP={handleLoginViaOTP}
             />

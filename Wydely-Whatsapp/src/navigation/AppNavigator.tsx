@@ -9,6 +9,7 @@ import OTPVerificationPage from '../screens/OTPVerificationPage';
 import DashboardPageWrapper from '../screens/DashboardPageWrapper';
 import BroadcastCampaignPageWrapper from '../screens/BroadcastCampaignPageWrapper';
 import BroadcastCampaignPreviewPageWrapper from '../screens/BroadcastCampaignPreviewPageWrapper';
+import CreateCampaignsPageWrapper from '../screens/CreateCampaignsPageWrapper';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -24,6 +25,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       Profile: '/profile',
       BroadcastCampaign: '/campaigns/broadcast',
       BroadcastCampaignPreview: '/campaigns/broadcast/preview',
+      CreateCampaigns: '/campaigns/create',
     },
   },
 };
@@ -47,6 +49,7 @@ const AppNavigator = () => {
           name="BroadcastCampaignPreview"
           component={BroadcastCampaignPreviewPageWrapper}
         />
+        <Stack.Screen name="CreateCampaigns" component={CreateCampaignsPageWrapper} />
       </Stack.Navigator>
     </NavigationContainer>
   );

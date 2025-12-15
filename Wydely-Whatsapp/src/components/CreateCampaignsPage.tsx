@@ -31,7 +31,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
   </TouchableOpacity>
 );
 
-const CampaignsPage: React.FC = () => {
+const CreateCampaignsPage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const handleCampaignPress = (campaignId: string) => {
@@ -42,13 +42,21 @@ const CampaignsPage: React.FC = () => {
     }
   };
 
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('Dashboard', { initialIcon: 'campaigns' });
+    }
+  };
+
   const campaigns = [
     {
       id: 'broadcast',
       title: 'Broadcast Campaign',
       description:
         'Choose and filter your existing audience to send personalized template or regular messages.',
-      iconColor: '#A98CFF',
+      iconColor: '#6898FF',
       iconImage: require('../../assets/images/broadcast_campaign.png'),
     },
     {
@@ -72,8 +80,8 @@ const CampaignsPage: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.pageHeader}>
-        <TouchableOpacity style={styles.backButton} activeOpacity={0.7}>
-          <ArrowLeftIcon width={24} height={24} />
+        <TouchableOpacity style={styles.backButton} activeOpacity={0.7} onPress={handleBack}>
+          <ArrowLeftIcon width={24} height={24} style={{ marginRight: 4 }} />
           <Text style={styles.headerTitle}>Campaigns</Text>
         </TouchableOpacity>
       </View>
@@ -195,4 +203,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CampaignsPage;
+export default CreateCampaignsPage;

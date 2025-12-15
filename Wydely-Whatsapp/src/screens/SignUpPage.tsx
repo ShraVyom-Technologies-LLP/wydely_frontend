@@ -48,10 +48,13 @@ export default function SignUpPage() {
       console.log('Signup successful:', result.data);
       // Navigate to OTP screen with email
       const email = values.companyEmail;
+      const phoneNumber = values.phone;
       if (typeof window !== 'undefined') {
-        window.location.href = `/otp?email=${encodeURIComponent(email)}&from=signup`;
+        window.location.href = `/otp?email=${encodeURIComponent(
+          email
+        )}&phoneNumber=${encodeURIComponent(phoneNumber)}&from=signup`;
       } else {
-        navigation.navigate('OTP', { email, from: 'signup' });
+        navigation.navigate('OTP', { email, phoneNumber, from: 'signup' });
       }
     } else {
       console.error('Signup failed:', result.error);

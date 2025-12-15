@@ -23,6 +23,8 @@ type OTPScreenRouteProp = RouteProp<RootStackParamList, 'OTP'>;
 
 type FormValues = {
   otp: string;
+  emailOtp: string;
+  phoneOtp: string;
 };
 
 type Props = {
@@ -38,7 +40,7 @@ export default function OTPVerificationPage({ handleBack }: Props) {
   // Get email and from params, also check URL params for web
   let email = route.params?.email || 'your email';
   let from = route.params?.from;
-
+  const phoneNumber = route.params?.phoneNumber || 'your WhatsApp number';
   // For web, also check URL query parameters
   if (typeof window !== 'undefined' && !from) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -49,8 +51,10 @@ export default function OTPVerificationPage({ handleBack }: Props) {
       from = urlFrom;
     }
   }
-  const [isResending, setIsResending] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isPhoneResending, setIsPhoneResending] = useState(false);
+  const [isEmailResending, setIsEmailResending] = useState(false);
+  const [phoneResendCooldown, setPhoneResendCooldown] = useState(0);
+  const [emailResendCooldown, setEmailResendCooldown] = useState(0);
 
   const {
     control,
@@ -61,11 +65,16 @@ export default function OTPVerificationPage({ handleBack }: Props) {
   } = useForm<FormValues>({
     defaultValues: {
       otp: '',
+      emailOtp: '',
+      phoneOtp: '',
     },
     mode: 'onBlur',
   });
 
   const otpValue = watch('otp');
+  const emailOtpValue = watch('emailOtp');
+  const phoneOtpValue = watch('phoneOtp');
+  const isFromSignup = from === 'signup';
 
   const navigateTo = (webPath: string, screen: 'Login' | 'SignUp') => {
     if (typeof window !== 'undefined') {
@@ -88,16 +97,16 @@ export default function OTPVerificationPage({ handleBack }: Props) {
     }
   };
 
-  const handleResend = async () => {
-    if (isResending || resendCooldown > 0) return;
+  const handleEmailResend = async () => {
+    if (isEmailResending || emailResendCooldown > 0) return;
 
-    setIsResending(true);
+    setIsEmailResending(true);
 
     const response = await apiService.resendOtp(email);
     if (response.success) {
-      setResendCooldown(60);
+      setEmailResendCooldown(60);
       const interval = setInterval(() => {
-        setResendCooldown((prev) => {
+        setEmailResendCooldown((prev) => {
           if (prev <= 1) {
             clearInterval(interval);
             return 0;
@@ -107,12 +116,38 @@ export default function OTPVerificationPage({ handleBack }: Props) {
       }, 1000);
     }
 
-    setIsResending(false);
+    setIsEmailResending(false);
+  };
+
+  const handlePhoneResend = async () => {
+    if (isPhoneResending || phoneResendCooldown > 0) return;
+
+    setIsPhoneResending(true);
+
+    const response = await apiService.resendOtp(undefined, phoneNumber);
+    if (response.success) {
+      setPhoneResendCooldown(60);
+      const interval = setInterval(() => {
+        setPhoneResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    setIsPhoneResending(false);
   };
 
   const onSubmit = async (_values: FormValues) => {
-    // TODO: Implement OTP verification API call and handle errors
-    navigation.navigate('Dashboard');
+    const response = await apiService.verifyOtp(email, phoneNumber, _values.emailOtp, _values.phoneOtp);
+    if (response.success) {
+      navigation.navigate('Dashboard');
+    } else {
+      console.error('OTP verification failed:', response.error);
+    }
   };
 
   return (
@@ -140,39 +175,102 @@ export default function OTPVerificationPage({ handleBack }: Props) {
               <Pressable onPress={handleBackPress} style={styles.backButton}>
                 <Text style={styles.backIcon}>←</Text>
               </Pressable>
-              <Text style={styles.title}>OTP Verification</Text>
+              <Text style={styles.title}>
+                {isFromSignup ? 'Verify Email and Mobile Number' : 'OTP Verification'}
+              </Text>
             </View>
 
-            {/* Email info */}
-            <View style={styles.contentContainer}>
-              <Text style={styles.emailText}>
-                We sent a code to <Text style={styles.emailHighlight}>{email}</Text>
-              </Text>
+            {isFromSignup ? (
+              <View style={styles.signupContentContainer}>
+                {/* Email OTP section */}
+                <View style={styles.otpSection}>
+                  <View style={styles.otpSectionHeader}>
+                    <Text style={styles.otpSectionText}>
+                      <Text style={styles.otpSectionLabel}>Enter OTP sent to </Text>
+                      <Text style={styles.otpSectionHighlight}>{email}</Text>
+                    </Text>
 
-              {/* OTP Input */}
-              <View style={styles.formContainer}>
-                <Controller
-                  control={control}
-                  name="otp"
-                  render={({ field: { onChange, value } }) => (
-                    <OTPInput
-                      value={value}
-                      onChangeText={(newValue) => {
-                        onChange(newValue);
-                        setValue('otp', newValue, { shouldValidate: true });
-                      }}
-                      error={errors.otp?.message}
-                    />
-                  )}
-                />
+                    {emailResendCooldown > 0 ? (
+                      <Text style={styles.resendText}>
+                        <Text style={styles.resendTextGrey}>Resend OTP in </Text>
+                        <Text style={styles.resendCountdown}>
+                          00:{String(emailResendCooldown).padStart(2, '0')}
+                        </Text>
+                      </Text>
+                    ) : (
+                      <Text style={styles.resendText}>
+                        <Text style={styles.resendLink} onPress={handleEmailResend}>
+                          RESEND
+                        </Text>
+                      </Text>
+                    )}
+                  </View>
+                  <Controller
+                    control={control}
+                    name="emailOtp"
+                    render={({ field: { onChange, value } }) => (
+                      <OTPInput
+                        value={value}
+                        hideLabel
+                        onChangeText={(newValue) => {
+                          onChange(newValue);
+                          setValue('emailOtp', newValue, { shouldValidate: true });
+                        }}
+                        error={errors.emailOtp?.message}
+                      />
+                    )}
+                  />
+                </View>
+
+                {/* Phone OTP section */}
+                <View style={styles.otpSection}>
+                  <View style={styles.otpSectionHeader}>
+                    <Text style={styles.otpSectionText}>
+                      <Text style={styles.otpSectionLabel}>Enter OTP sent to </Text>
+                      <Text style={styles.otpSectionHighlight}>{phoneNumber}</Text>
+                    </Text>
+                    {phoneResendCooldown > 0 ? (
+                      <Text style={styles.resendText}>
+                        <Text style={styles.resendTextGrey}>Resend OTP in </Text>
+                        <Text style={styles.resendCountdown}>
+                          00:{String(phoneResendCooldown).padStart(2, '0')}
+                        </Text>
+                      </Text>
+                    ) : (
+                      <Text style={styles.resendText}>
+                        <Text style={styles.resendLink} onPress={handlePhoneResend}>
+                          RESEND
+                        </Text>
+                      </Text>
+                    )}
+                  </View>
+                  <Controller
+                    control={control}
+                    name="phoneOtp"
+                    render={({ field: { onChange, value } }) => (
+                      <OTPInput
+                        value={value}
+                        hideLabel
+                        onChangeText={(newValue) => {
+                          onChange(newValue);
+                          setValue('phoneOtp', newValue, { shouldValidate: true });
+                        }}
+                        error={errors.phoneOtp?.message}
+                      />
+                    )}
+                  />
+                </View>
 
                 {/* Submit Button */}
                 <Pressable
                   onPress={handleSubmit(onSubmit)}
-                  disabled={isSubmitting || otpValue.length !== 6}
+                  disabled={
+                    isSubmitting || emailOtpValue.length !== 6 || phoneOtpValue.length !== 6
+                  }
                   style={({ pressed }) => [
                     styles.submitButton,
-                    (isSubmitting || otpValue.length !== 6) && styles.submitButtonDisabled,
+                    (isSubmitting || emailOtpValue.length !== 6 || phoneOtpValue.length !== 6) &&
+                      styles.submitButtonDisabled,
                     pressed && { opacity: 0.95 },
                   ]}
                 >
@@ -180,28 +278,67 @@ export default function OTPVerificationPage({ handleBack }: Props) {
                     {isSubmitting ? 'Verifying...' : 'Submit'}
                   </Text>
                 </Pressable>
+              </View>
+            ) : (
+              <View style={styles.contentContainer}>
+                <Text style={styles.emailText}>
+                  We sent a code to <Text style={styles.emailHighlight}>{email}</Text>
+                </Text>
 
-                {/* Resend Link */}
-                <View style={styles.resendContainer}>
-                  {resendCooldown > 0 ? (
-                    <Text style={styles.resendText}>
-                      <Text style={styles.resendTextActive}>Didn't receive code? </Text>
-                      <Text style={styles.resendTextGrey}>Resend OTP in </Text>
-                      <Text style={styles.resendCountdown}>
-                        00:{String(resendCooldown).padStart(2, '0')}
-                      </Text>
+                {/* OTP Input */}
+                <View style={styles.formContainer}>
+                  <Controller
+                    control={control}
+                    name="otp"
+                    render={({ field: { onChange, value } }) => (
+                      <OTPInput
+                        value={value}
+                        onChangeText={(newValue) => {
+                          onChange(newValue);
+                          setValue('otp', newValue, { shouldValidate: true });
+                        }}
+                        error={errors.otp?.message}
+                      />
+                    )}
+                  />
+
+                  {/* Submit Button */}
+                  <Pressable
+                    onPress={handleSubmit(onSubmit)}
+                    disabled={isSubmitting || otpValue.length !== 6}
+                    style={({ pressed }) => [
+                      styles.submitButton,
+                      (isSubmitting || otpValue.length !== 6) && styles.submitButtonDisabled,
+                      pressed && { opacity: 0.95 },
+                    ]}
+                  >
+                    <Text style={styles.submitButtonText}>
+                      {isSubmitting ? 'Verifying...' : 'Submit'}
                     </Text>
-                  ) : (
-                    <Text style={styles.resendText}>
-                      <Text style={styles.resendTextGrey}>Didn't receive code? </Text>
-                      <Text style={styles.resendLink} onPress={handleResend}>
-                        RESEND
+                  </Pressable>
+
+                  {/* Resend Link */}
+                  <View style={styles.resendContainer}>
+                    {emailResendCooldown > 0 ? (
+                      <Text style={styles.resendText}>
+                        <Text style={styles.resendTextActive}>Didn't receive code? </Text>
+                        <Text style={styles.resendTextGrey}>Resend OTP in </Text>
+                        <Text style={styles.resendCountdown}>
+                          00:{String(emailResendCooldown).padStart(2, '0')}
+                        </Text>
                       </Text>
-                    </Text>
-                  )}
+                    ) : (
+                      <Text style={styles.resendText}>
+                        <Text style={styles.resendTextGrey}>Didn't receive code? </Text>
+                        <Text style={styles.resendLink} onPress={handleEmailResend}>
+                          RESEND
+                        </Text>
+                      </Text>
+                    )}
+                  </View>
                 </View>
               </View>
-            </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -307,6 +444,38 @@ const styles = StyleSheet.create({
   },
   resendCountdown: {
     color: '#FF6B00', // Orange
+    fontWeight: '600',
+  },
+  signupContentContainer: {
+    width: '100%',
+    maxWidth: 630,
+    gap: 32,
+  },
+  otpSection: {
+    gap: 16,
+  },
+  otpSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  otpSectionText: {
+    fontSize: 16,
+    lineHeight: 25,
+  },
+  otpSectionLabel: {
+    color: colors.textSecondary,
+  },
+  otpSectionHighlight: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  resendLinkInline: {
+    color: colors.link,
+    fontWeight: '600',
+  },
+  resendLinkDisabled: {
+    color: colors.textLight,
     fontWeight: '600',
   },
 });

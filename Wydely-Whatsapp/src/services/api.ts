@@ -15,19 +15,48 @@ export interface ApiResponse<T = unknown> {
   error?: string;
 }
 
+export interface TemplateOption {
+  id: string;
+  name: string;
+  content: string;
+}
+
 export interface UserAccountProfile {
   displayName: string;
   email: string;
   whatsappNumber: string;
   userName: string;
-  // Password is never sent back from backend for security
-  password?: string;
 }
+
+export type Contact = {
+  id: string;
+  name: string;
+  mobileNumber: string;
+  tags: string;
+  source: string;
+  status: 'Inactive' | 'Active';
+  state: string;
+  lastActive: string;
+  optedIn: 'Yes' | 'No' | '-';
+  mauStatus: 'Active' | 'Inactive';
+  conversationStatus: 'Active' | 'Inactive';
+};
+
+type CampaignType = 'broadcast' | 'api';
+
+export type Campaign = {
+  id: string;
+  name: string;
+  type: CampaignType;
+  createdAt: string;
+  status: 'Active' | 'Inactive';
+  audience: string;
+};
 
 class ApiService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'https://your-api-endpoint.com') {
+  constructor(baseUrl: string = 'http://localhost:3000') {
     this.baseUrl = baseUrl;
   }
 
@@ -62,68 +91,62 @@ class ApiService {
     }
   }
 
-  async signUp(_userData: SignUpData): Promise<ApiResponse> {
-    // return this.makeRequest("/api/signup", {
-    //   method: "POST",
-    //   body: JSON.stringify(userData),
-    // });
-    await new Promise((resolve) => setTimeout(resolve, 10000));
-    return {
-      success: true,
-      data: { message: 'Signup successful' },
-    };
+  async signUp(userData: SignUpData): Promise<ApiResponse> {
+    return this.makeRequest('/signup', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
   }
 
-  async resendOtp(_email: string): Promise<ApiResponse> {
-    // return this.makeRequest("/api/resend-otp", {
-    //   method: "POST",
-    //   body: JSON.stringify({ email }),
-    // });
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    return {
-      success: true,
-      data: { message: 'OTP resent' },
-    };
+  async login(email: string, password: string): Promise<ApiResponse> {
+    return this.makeRequest('/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
   }
 
-  // Add other API methods here as needed
-  // async login(credentials: LoginData): Promise<ApiResponse> { ... }
+  async resendOtp(email?: string, phone?: string): Promise<ApiResponse> {
+    return this.makeRequest('/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, phone }),
+    });
+  }
+
+  async verifyOtp(
+    email: string,
+    phone: string,
+    emailOtp: string,
+    phoneOtp: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest('/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, phone, emailOtp, phoneOtp }),
+    });
+  }
 
   async getUserProfile(): Promise<ApiResponse<UserAccountProfile>> {
-    // return this.makeRequest<UserAccountProfile>("/api/profile", { method: "GET" });
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return {
-      success: true,
-      data: {
-        displayName: 'Harshil',
-        email: 'Harshilbhandari1997@gmail.com',
-        whatsappNumber: '919690008019',
-        userName: 'harshilbhandari1997@gmail.com',
-      },
-    };
+    return this.makeRequest<UserAccountProfile>('/profile-details', { method: 'GET' });
   }
 
   async updateUserProfile(
     updated: Partial<UserAccountProfile>
   ): Promise<ApiResponse<UserAccountProfile>> {
-    // return this.makeRequest<UserAccountProfile>("/api/profile", {
-    //   method: "PUT",
-    //   body: JSON.stringify(updated),
-    // });
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    return this.makeRequest<UserAccountProfile>('/update-profile', {
+      method: 'POST',
+      body: JSON.stringify(updated),
+    });
+  }
 
-    // In this mock, just echo back the updated fields merged with a default profile
-    const base: UserAccountProfile = {
-      displayName: 'Harshil',
-      email: 'Harshilbhandari1997@gmail.com',
-      whatsappNumber: '919690008019',
-      userName: 'harshilbhandari1997@gmail.com',
-    };
+  async getTemplates(): Promise<ApiResponse<TemplateOption[]>> {
+    return this.makeRequest<TemplateOption[]>('/get-templates', { method: 'GET' });
+  }
 
-    return {
-      success: true,
-      data: { ...base, ...updated },
-    };
+  async getContacts(): Promise<ApiResponse<Contact[]>> {
+    return this.makeRequest<Contact[]>('/get-contacts', { method: 'GET' });
+  }
+
+  async getExistingCampaigns(): Promise<ApiResponse<Campaign[]>> {
+    return this.makeRequest<Campaign[]>('/get-existing-campaigns', { method: 'GET' });
   }
 }
 

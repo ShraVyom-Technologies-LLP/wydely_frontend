@@ -1,20 +1,14 @@
-import { useState, useRef, useEffect } from "react";
-import {
-  View,
-  TextInput,
-  Text,
-  StyleSheet,
-  Pressable,
-  Platform,
-} from "react-native";
-import type { TextInputProps } from "react-native";
-import colors from "../theme/colors";
+import { useState, useRef, useEffect } from 'react';
+import { View, TextInput, Text, StyleSheet, Platform } from 'react-native';
+import colors from '../theme/colors';
 
 type Props = {
   length?: number;
   value: string;
   onChangeText: (value: string) => void;
   error?: string;
+  label?: string;
+  hideLabel?: boolean;
 };
 
 export default function OTPInput({
@@ -22,6 +16,8 @@ export default function OTPInput({
   value,
   onChangeText,
   error,
+  label = 'OTP',
+  hideLabel = false,
 }: Props) {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -33,13 +29,13 @@ export default function OTPInput({
 
   const handleChange = (text: string, index: number) => {
     // Only allow digits
-    const digit = text.replace(/[^0-9]/g, "");
+    const digit = text.replace(/[^0-9]/g, '');
 
     if (digit.length > 1) {
       // Handle paste - take first digit
-      const newValue = value.split("");
+      const newValue = value.split('');
       newValue[index] = digit[0];
-      const updatedValue = newValue.join("").slice(0, length);
+      const updatedValue = newValue.join('').slice(0, length);
       onChangeText(updatedValue);
 
       // Focus next empty input
@@ -50,10 +46,10 @@ export default function OTPInput({
       return;
     }
 
-    const newValue = value.split("");
+    const newValue = value.split('');
     if (digit) {
       newValue[index] = digit;
-      onChangeText(newValue.join("").slice(0, length));
+      onChangeText(newValue.join('').slice(0, length));
 
       // Auto-focus next input
       if (index < length - 1) {
@@ -61,17 +57,17 @@ export default function OTPInput({
       }
     } else {
       // Handle backspace - clear current and move to previous
-      newValue[index] = "";
-      onChangeText(newValue.join(""));
+      newValue[index] = '';
+      onChangeText(newValue.join(''));
       if (index > 0 && !value[index]) {
         inputRefs.current[index - 1]?.focus();
       }
     }
   };
 
-  const handleKeyPress = (e: any, index: number) => {
+  const handleKeyPress = (e: { nativeEvent: { key: string } }, index: number) => {
     // Handle backspace on empty input
-    if (e.nativeEvent.key === "Backspace" && !value[index] && index > 0) {
+    if (e.nativeEvent.key === 'Backspace' && !value[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
@@ -86,22 +82,22 @@ export default function OTPInput({
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>OTP</Text>
+      {!hideLabel && <Text style={styles.label}>{label}</Text>}
       <View style={styles.inputContainer}>
         {Array.from({ length }).map((_, index) => {
-          const inputStyles: any[] = [
+          const inputStyles = [
             styles.input,
             focusedIndex === index ? styles.inputFocused : null,
             error ? styles.inputError : null,
-          ].filter(Boolean);
+          ].filter(Boolean) as object[];
 
           // Add web-specific styles if needed
-          if (Platform.OS === "web") {
+          if (Platform.OS === 'web') {
             const webStyles = inputStyles[inputStyles.length - 1] || {};
             inputStyles[inputStyles.length - 1] = {
               ...webStyles,
-              outline: "none",
-              boxShadow: "none",
+              outline: 'none',
+              boxShadow: 'none',
             };
           }
 
@@ -110,7 +106,7 @@ export default function OTPInput({
               key={index}
               ref={(ref) => (inputRefs.current[index] = ref)}
               style={inputStyles}
-              value={value[index] || ""}
+              value={value[index] || ''}
               onChangeText={(text) => handleChange(text, index)}
               onKeyPress={(e) => handleKeyPress(e, index)}
               onFocus={() => handleFocus(index)}
@@ -135,15 +131,15 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
     color: colors.textLight,
     marginBottom: 8,
   },
   inputContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 14,
-    justifyContent: "space-between",
-    width: "95%",
+    justifyContent: 'space-between',
+    width: '100%',
   },
   input: {
     flex: 1,
@@ -151,9 +147,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    textAlign: "center",
+    textAlign: 'center',
     fontSize: 20,
-    fontWeight: "600",
+    fontWeight: '600',
     color: colors.text,
     backgroundColor: colors.inputBg,
     minWidth: 0, // Allow flex to shrink below content size

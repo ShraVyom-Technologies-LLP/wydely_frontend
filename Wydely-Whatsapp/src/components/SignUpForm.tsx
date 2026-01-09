@@ -146,7 +146,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ control, errors, onSubmit, isSu
         name="phone"
         render={({ field: { value, onChange, onBlur } }) => (
           <PhoneInput
-            label="Personal WhatsApp Number"
+            label="WhatsApp Number"
             value={value}
             onChangeText={onChange}
             onBlur={onBlur}

@@ -21,6 +21,7 @@ import MyAccountPage from '../components/MyAccountPage';
 import colors from '../theme/colors';
 import { RootStackParamList } from '../navigation/types';
 import ExistingCampaignsPage from '../components/ExistingCampaignsPage';
+import ManagePage from '../components/ManagePage';
 
 // Placeholder components for other pages
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -50,6 +51,7 @@ export default function DashboardPage() {
     activeIcon,
     setActiveIcon,
     error,
+    isSendEnabled,
   } = useDashboard();
 
   const route = useRoute<RouteProp<RootStackParamList, 'Dashboard'>>();
@@ -151,6 +153,7 @@ export default function DashboardPage() {
           {mobileView === 'chat' && selectedChatId && (
             <ChatPanel
               messages={messages}
+              isSendEnabled={isSendEnabled}
               onSendMessage={(text) => sendMessage(selectedChatId, text)}
             />
           )}
@@ -170,6 +173,7 @@ export default function DashboardPage() {
           {selectedChatId ? (
             <ChatPanel
               messages={messages}
+              isSendEnabled={isSendEnabled}
               onSendMessage={(text) => sendMessage(selectedChatId, text)}
             />
           ) : (
@@ -210,7 +214,7 @@ export default function DashboardPage() {
       case 'notifications':
         return <PlaceholderPage title="Notifications" />;
       case 'settings':
-        return <PlaceholderPage title="Settings" />;
+        return <ManagePage />;
       case 'help':
         return <PlaceholderPage title="Help & Support" />;
       default:

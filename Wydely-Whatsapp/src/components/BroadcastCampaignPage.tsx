@@ -4,10 +4,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
-import ApiService from '../services/api';
-import { TemplateOption } from '../services/api';
-
-const api = new ApiService();
+import { apiService, TemplateOption, CreateCampaignData } from '../services/api';
+import { useApiCall } from '../hooks/useApiCall';
+import { useProject } from '../context/ProjectContext';
+import ShimmerScreen from './ShimmerScreen';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -23,13 +23,6 @@ interface RadioGroupProps {
   onSelect: (value: string) => void;
   showInfo?: boolean;
 }
-
-// Simulated API call for templates
-const fetchTemplates = async (): Promise<TemplateOption[]> => {
-  const response = await api.getTemplates();
-  console.log('response', response);
-  return response?.data || [];
-};
 
 const RadioGroup: React.FC<RadioGroupProps> = ({
   label,
@@ -81,6 +74,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
 
 const BroadcastCampaignPage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { selectedProject } = useProject();
   const [campaignName, setCampaignName] = useState('');
   const [lastSeen, setLastSeen] = useState('in24hr');
   const [createdAt, setCreatedAt] = useState('today');
@@ -90,9 +84,6 @@ const BroadcastCampaignPage: React.FC = () => {
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
-
-  // Placeholder audience size until this is wired to actual audience calculation
-  const estimatedAudienceSize = 23;
 
   const lastSeenOptions: RadioOption[] = [
     { label: 'In 24hr', value: 'in24hr' },
@@ -128,24 +119,58 @@ const BroadcastCampaignPage: React.FC = () => {
 
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) || null;
 
-  useEffect(() => {
-    let isMounted = true;
-    fetchTemplates()
-      .then((data) => {
-        if (isMounted) {
-          setTemplates(data);
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to load templates:', error);
-      });
+  const fetchTemplatesAPI = useApiCall(() => apiService.getExistingTemplates(), {
+    showErrorToast: true,
+    errorMessage: 'Failed to load templates',
+    onSuccess: (data) => {
+      if (data && Array.isArray(data)) {
+        setTemplates(data);
+      }
+    },
+  });
 
-    return () => {
-      isMounted = false;
-    };
+  const createCampaignAPI = useApiCall(
+    (data: CreateCampaignData) => apiService.createCampaign(data),
+    {
+      showErrorToast: true,
+      errorMessage: 'Failed to create campaign',
+      onSuccess: (response) => {
+        if (response) {
+          navigation.navigate('BroadcastCampaignPreview', {
+            campaignName: response.campaignName,
+            templateName: response.templateContent?.title,
+            templateContent: response.templateContent?.message,
+            audienceSize: response.audienceSize,
+            campaignCost: response.campaignCost,
+            walletBalance: response.walletBalance,
+          });
+        }
+      },
+    }
+  );
+
+  useEffect(() => {
+    fetchTemplatesAPI.execute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
+  const onPressPreview = () => {
+    if (!selectedTemplate || !campaignName.trim()) {
+      return;
+    }
+
+    const campaignData: CreateCampaignData = {
+      campaignName: campaignName.trim(),
+      templateId: selectedTemplate.id,
+      projectId: selectedProject?.id,
+    };
+
+    createCampaignAPI.execute(campaignData);
+  };
+
+  return fetchTemplatesAPI.isLoading || templates.length === 0 ? (
+    <ShimmerScreen />
+  ) : (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.pageHeader}>
@@ -246,38 +271,43 @@ const BroadcastCampaignPage: React.FC = () => {
                   onPress={() => setIsTemplateDropdownOpen((prev) => !prev)}
                 >
                   {selectedTemplate ? (
-                    <Text style={styles.templateName}>{selectedTemplate.name}</Text>
+                    <Text style={styles.templateName}>{selectedTemplate.title}</Text>
                   ) : (
                     <Text style={styles.dropdownPlaceholder}>-Select-</Text>
                   )}
                   <Text style={styles.dropdownIcon}>▼</Text>
                 </TouchableOpacity>
                 {isTemplateDropdownOpen && (
-                  <View style={styles.dropdownMenu}>
-                    {templates.map((template) => (
-                      <TouchableOpacity
-                        key={template.id}
-                        style={[
-                          styles.dropdownItem,
-                          selectedTemplateId === template.id && styles.dropdownItemSelected,
-                        ]}
-                        activeOpacity={0.7}
-                        onPress={() => {
-                          setSelectedTemplateId(template.id);
-                          setIsTemplateDropdownOpen(false);
-                        }}
-                      >
-                        <Text
+                  <View key={`dropdown-${templates.length}`} style={styles.dropdownMenu}>
+                    {fetchTemplatesAPI.isLoading ? (
+                      <View style={styles.dropdownEmpty}>
+                        <Text style={styles.dropdownEmptyText}>Loading templates...</Text>
+                      </View>
+                    ) : templates.length > 0 ? (
+                      templates.map((template) => (
+                        <TouchableOpacity
+                          key={template.id}
                           style={[
-                            styles.dropdownItemText,
-                            selectedTemplateId === template.id && styles.dropdownItemTextSelected,
+                            styles.dropdownItem,
+                            selectedTemplateId === template.id && styles.dropdownItemSelected,
                           ]}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            setSelectedTemplateId(template.id);
+                            setIsTemplateDropdownOpen(false);
+                          }}
                         >
-                          {template.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                    {templates.length === 0 && (
+                          <Text
+                            style={[
+                              styles.dropdownItemText,
+                              selectedTemplateId === template.id && styles.dropdownItemTextSelected,
+                            ]}
+                          >
+                            {template.title}
+                          </Text>
+                        </TouchableOpacity>
+                      ))
+                    ) : (
                       <View style={styles.dropdownEmpty}>
                         <Text style={styles.dropdownEmptyText}>No templates available</Text>
                       </View>
@@ -289,7 +319,7 @@ const BroadcastCampaignPage: React.FC = () => {
                 <Text style={styles.inputLabel}>Preview</Text>
                 <View style={styles.previewBox}>
                   <Text style={styles.previewText}>
-                    {selectedTemplate ? selectedTemplate.content : ''}
+                    {selectedTemplate ? selectedTemplate.message : ''}
                   </Text>
                 </View>
               </View>
@@ -308,14 +338,8 @@ const BroadcastCampaignPage: React.FC = () => {
             <TouchableOpacity
               style={styles.previewButton}
               activeOpacity={0.7}
-              onPress={() =>
-                navigation.navigate('BroadcastCampaignPreview', {
-                  campaignName,
-                  templateName: selectedTemplate?.name || '',
-                  templateContent: selectedTemplate?.content || '',
-                  audienceSize: estimatedAudienceSize,
-                })
-              }
+              onPress={onPressPreview}
+              disabled={!selectedTemplate || !campaignName || createCampaignAPI.isLoading}
             >
               <Text style={styles.previewButtonText}>Preview</Text>
             </TouchableOpacity>

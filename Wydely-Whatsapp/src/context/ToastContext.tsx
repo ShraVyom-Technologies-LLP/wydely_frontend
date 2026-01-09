@@ -191,11 +191,11 @@ const getPalette = (type: ToastType) => {
 const styles = StyleSheet.create({
   host: {
     position: 'absolute',
-    top: 80,
-    left: 72,
+    bottom: 24,
+    left: 24,
     right: 24,
     zIndex: 200,
-    alignItems: 'flex-start',
+    alignItems: 'center',
     pointerEvents: 'box-none',
   },
   toast: {

@@ -1,5 +1,5 @@
 import { ChatItem } from '../components/dashboard/chatsDashboard/ChatListPanel';
-import { Message } from '../components/dashboard/chatsDashboard/ChatPanel';
+import { Message, UserChatPanel } from '../components/dashboard/chatsDashboard/ChatPanel';
 import { UserProfile } from '../components/dashboard/chatsDashboard/UserProfilePanel';
 
 // Mock data
@@ -64,84 +64,105 @@ const mockChats: ChatItem[] = [
   },
 ];
 
-const mockMessages: Record<string, Message[]> = {
-  '1': [
-    {
-      id: 'm1',
-      text: 'See you at office tomorrow!',
-      timestamp: '15:03',
-      isFromUser: false,
-      status: 'RECEIVED_READ',
-    },
-    {
-      id: 'm2',
-      text: 'Thank you for work, see you!',
-      timestamp: '16:05',
-      isFromUser: true,
-      status: 'SENT_DELIVERED_READ',
-    },
-  ],
-  '2': [
-    {
-      id: 'm5',
-      text: 'Hey! How are you doing?',
-      timestamp: '14:30',
-      isFromUser: true,
-      status: 'SENT_DELIVERED_UNREAD',
-    },
-  ],
-  '3': [
-    {
-      id: 'm6',
-      text: 'Hey! How are you doing?',
-      timestamp: '14:30',
-      isFromUser: true,
-      status: 'SENT_UNDELIVERED',
-    },
-  ],
-  '4': [
-    {
-      id: 'm7',
-      text: 'Hey! How are you doing?',
-      timestamp: '14:30',
-      isFromUser: false,
-      status: 'RECEIVED_UNREAD',
-    },
-    {
-      id: 'm8',
-      text: 'REPLY TO THIS MESSAGE',
-      timestamp: '14:30',
-      isFromUser: false,
-      status: 'RECEIVED_UNREAD',
-    },
-  ],
-  '5': [
-    {
-      id: 'm9',
-      text: 'Hey! How are you doing?',
-      timestamp: '14:30',
-      isFromUser: false,
-      status: 'RECEIVED_READ',
-    },
-  ],
-  '6': [
-    {
-      id: 'm10',
-      text: 'Hey! How are you doing?',
-      timestamp: '14:30',
-      isFromUser: false,
-      status: 'RECEIVED_READ',
-    },
-  ],
-  '7': [
-    {
-      id: 'm11',
-      text: 'Hey! How are you doing?',
-      timestamp: '14:30',
-      isFromUser: false,
-      status: 'RECEIVED_UNREAD',
-    },
-  ],
+const mockMessages: Record<string, UserChatPanel> = {
+  '1': {
+    messages: [
+      {
+        id: 'm1',
+        text: 'See you at office tomorrow!',
+        timestamp: '15:03',
+        isFromUser: false,
+        status: 'RECEIVED_READ',
+      },
+      {
+        id: 'm2',
+        text: 'Thank you for work, see you!',
+        timestamp: '16:05',
+        isFromUser: true,
+        status: 'SENT_DELIVERED_READ',
+      },
+    ],
+    isSendEnabled: false,
+  },
+  '2': {
+    messages: [
+      {
+        id: 'm5',
+        text: 'Hey! How are you doing?',
+        timestamp: '14:30',
+        isFromUser: true,
+        status: 'SENT_DELIVERED_UNREAD',
+      },
+    ],
+    isSendEnabled: true,
+  },
+  '3': {
+    messages: [
+      {
+        id: 'm6',
+        text: 'Hey! How are you doing?',
+        timestamp: '14:30',
+        isFromUser: true,
+        status: 'SENT_UNDELIVERED',
+      },
+    ],
+    isSendEnabled: true,
+  },
+  '4': {
+    messages: [
+      {
+        id: 'm7',
+        text: 'Hey! How are you doing?',
+        timestamp: '14:30',
+        isFromUser: false,
+        status: 'RECEIVED_UNREAD',
+      },
+      {
+        id: 'm8',
+        text: 'REPLY TO THIS MESSAGE',
+        timestamp: '14:30',
+        isFromUser: false,
+        status: 'RECEIVED_UNREAD',
+      },
+    ],
+    isSendEnabled: true,
+  },
+  '5': {
+    messages: [
+      {
+        id: 'm9',
+        text: 'Hey! How are you doing?',
+        timestamp: '14:30',
+        isFromUser: false,
+        status: 'RECEIVED_READ',
+      },
+    ],
+    isSendEnabled: true,
+  },
+  '6': {
+    messages: [
+      {
+        id: 'm10',
+        text: 'Hey! How are you doing?',
+        timestamp: '14:30',
+        isFromUser: false,
+        status: 'RECEIVED_READ',
+      },
+    ],
+    isSendEnabled: true,
+  },
+  '7': {
+    messages: [
+      {
+        id: 'm11',
+        text: 'Hey! How are you doing?',
+        timestamp: '14:30',
+        isFromUser: false,
+        status: 'RECEIVED_UNREAD',
+      },
+    ],
+    isSendEnabled: true,
+  },
 };
 
 const mockProfiles: Record<string, UserProfile> = {
@@ -232,7 +253,7 @@ const mockProfiles: Record<string, UserProfile> = {
 };
 
 // API Configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.wydely.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 const USE_MOCK_DATA = process.env.EXPO_PUBLIC_USE_MOCK_DATA !== 'false';
 
 // Simulate API delay
@@ -246,14 +267,15 @@ class ChatApiService {
   }
 
   // Get chats based on tab/status
-  async getChats(tab: string = 'active'): Promise<ChatItem[]> {
+  async getChats(tab: string = 'active', projectId?: string): Promise<ChatItem[]> {
     if (USE_MOCK_DATA) {
       await delay(300); // Simulate network delay
       return [...mockChats];
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/chats?tab=${tab}`, {
+      const projectParam = projectId ? `&projectId=${encodeURIComponent(projectId)}` : '';
+      const response = await fetch(`${this.baseUrl}/api/chats?tab=${tab}${projectParam}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -276,10 +298,10 @@ class ChatApiService {
   }
 
   // Get messages for a specific chat
-  async getMessages(chatId: string): Promise<Message[]> {
+  async getMessagesPanel(chatId: string): Promise<UserChatPanel> {
     if (USE_MOCK_DATA) {
       await delay(200);
-      return [...(mockMessages[chatId] || [])];
+      return mockMessages[chatId];
     }
 
     try {
@@ -299,7 +321,7 @@ class ChatApiService {
     } catch (error) {
       console.error('Error fetching messages:', error);
       // Fallback to mock data on error
-      return [...(mockMessages[chatId] || [])];
+      return mockMessages[chatId];
     }
   }
 

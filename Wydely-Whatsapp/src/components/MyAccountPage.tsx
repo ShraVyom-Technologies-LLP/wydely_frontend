@@ -17,39 +17,61 @@ import EyeOffIcon from './icons/EyeOffIcon';
 import EyeIcon from '../../assets/icons/eye.svg';
 import { apiService, UserAccountProfile } from '../services/api';
 import LoadingScreen from './LoadingScreen';
+import ShimmerScreen from './ShimmerScreen';
+import { useApiCall } from '../hooks/useApiCall';
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'Dashboard'>;
 
 const MyAccountPage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [profile, setProfile] = useState<UserAccountProfile | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [editValues, setEditValues] = useState<{
     displayName: string;
     userName: string;
     password: string;
   } | null>(null);
 
-  const fetchProfile = useCallback(async () => {
-    setLoading(true);
-    const response = await apiService.getUserProfile();
-    if (response.success && response.data) {
-      setProfile(response.data);
-      setError(null);
-    } else {
-      setError(response.error || 'Failed to load profile');
-      setProfile(null);
+  // API call hooks - bind methods to preserve 'this' context
+  const getProfileApi = useApiCall(() => apiService.getUserProfile(), {
+    showErrorToast: true,
+    errorMessage: 'Failed to load profile',
+    onSuccess: (data) => {
+      if (data) {
+        setProfile(data);
+      }
+    },
+  });
+
+  // Also set profile from API data if available (fallback)
+  React.useEffect(() => {
+    if (getProfileApi.isSuccess && getProfileApi.data && !profile) {
+      setProfile(getProfileApi.data);
     }
-    setLoading(false);
-  }, []);
+  }, [getProfileApi.isSuccess, getProfileApi.data, profile]);
+
+  const updateProfileApi = useApiCall(
+    (updated: Parameters<typeof apiService.updateUserProfile>[0]) =>
+      apiService.updateUserProfile(updated),
+    {
+      showErrorToast: true,
+      successMessage: 'Profile updated successfully',
+      errorMessage: 'Failed to update profile',
+      onSuccess: (data) => {
+        if (data) {
+          setProfile(data);
+          setIsEditingProfile(false);
+          setEditValues(null);
+        }
+      },
+    }
+  );
 
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    getProfileApi.execute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const displayName = profile?.displayName ?? '';
   const email = profile?.email ?? '';
@@ -81,32 +103,32 @@ const MyAccountPage: React.FC = () => {
 
   const handleSaveProfile = async () => {
     if (!editValues) return;
-    setSaving(true);
-    const response = await apiService.updateUserProfile({
+    await updateProfileApi.execute({
       displayName: editValues.displayName,
       userName: editValues.userName,
       password: editValues.password,
     });
-    if (response.success && response.data) {
-      setProfile(response.data);
-      setError(null);
-      setIsEditingProfile(false);
-      setEditValues(null);
-    } else {
-      setError(response.error || 'Failed to update profile');
-    }
-    setSaving(false);
   };
 
-  // Show common loading / error screen until profile loads successfully
-  if (!profile || loading) {
+  // Show shimmer screen for initial page load
+  if (getProfileApi.isLoading && !profile) {
+    return <ShimmerScreen />;
+  }
+
+  // Show error screen only if we have an error, not successful, not loading, and no profile data
+  if (getProfileApi.isError && !getProfileApi.isSuccess) {
     return (
       <LoadingScreen
-        message="Loading profile..."
-        error={!loading ? error : null}
-        onRetry={!loading ? fetchProfile : undefined}
+        message="Failed to load profile"
+        error={getProfileApi.error || 'An error occurred'}
+        onRetry={() => getProfileApi.execute()}
       />
     );
+  }
+
+  // Don't render if no profile data and not loading
+  if (!profile && !getProfileApi.isLoading) {
+    return null;
   }
 
   return (
@@ -127,10 +149,6 @@ const MyAccountPage: React.FC = () => {
       >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Profile</Text>
-
-          {error && <Text style={styles.errorText}>{error}</Text>}
-
-          {loading && !profile && <Text style={styles.helperText}>Loading profile...</Text>}
 
           {/* Company Logo / Initial */}
           <View style={styles.logoBlock}>
@@ -262,16 +280,18 @@ const MyAccountPage: React.FC = () => {
                 <TouchableOpacity
                   style={[styles.actionButton, styles.cancelButton]}
                   onPress={handleCancelEdit}
-                  disabled={saving}
+                  disabled={updateProfileApi.isLoading}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.saveButton]}
                   onPress={handleSaveProfile}
-                  disabled={saving}
+                  disabled={updateProfileApi.isLoading}
                 >
-                  <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
+                  <Text style={styles.saveButtonText}>
+                    {updateProfileApi.isLoading ? 'Saving...' : 'Save'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}

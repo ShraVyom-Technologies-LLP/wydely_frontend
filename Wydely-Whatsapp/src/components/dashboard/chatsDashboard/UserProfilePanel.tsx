@@ -77,8 +77,8 @@ const UserProfilePanel: React.FC<UserProfilePanelProps> = ({ profile }) => {
                 <View style={styles.valuesColumn}>
                   <Text style={styles.infoValue}>{profile.status}</Text>
                   <Text style={styles.infoValue}>{profile.lastActive}</Text>
-                  <Text style={styles.infoValue}>{profile.templateMessages.toString()}</Text>
-                  <Text style={styles.infoValue}>{profile.sessionMessages.toString()}</Text>
+                  <Text style={styles.infoValue}>{profile.templateMessages?.toString()}</Text>
+                  <Text style={styles.infoValue}>{profile.sessionMessages?.toString()}</Text>
                   <Text style={styles.infoValue}>{profile.source}</Text>
                   <Text style={styles.infoValue}>{profile.mauStatus}</Text>
                   <Text style={styles.infoValue}>{profile.incoming}</Text>

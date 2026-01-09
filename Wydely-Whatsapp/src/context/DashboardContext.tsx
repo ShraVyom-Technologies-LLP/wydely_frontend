@@ -3,6 +3,7 @@ import { ChatItem } from '../components/dashboard/chatsDashboard/ChatListPanel';
 import { Message } from '../components/dashboard/chatsDashboard/ChatPanel';
 import { UserProfile } from '../components/dashboard/chatsDashboard/UserProfilePanel';
 import { chatApi } from '../services/chatApi';
+import { useProject } from './ProjectContext';
 
 interface DashboardState {
   // Tabs
@@ -38,17 +39,20 @@ interface DashboardState {
   // Refresh data
   refreshChats: () => Promise<void>;
   refreshMessages: (chatId: string) => Promise<void>;
+  isSendEnabled: boolean;
 }
 
 const DashboardContext = createContext<DashboardState | undefined>(undefined);
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { selectedProject } = useProject();
   const [activeTab, setActiveTab] = useState('active');
   const [chats, setChats] = useState<ChatItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChatId, setSelectedChatId] = useState<string | undefined>();
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [profiles, setProfiles] = useState<Record<string, UserProfile>>({});
+  const [isSendEnabled, setIsSendEnabled] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeIcon, setActiveIcon] = useState('home');
@@ -132,25 +136,32 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Refresh chats from API
   const refreshChats = useCallback(async () => {
+    if (!selectedProject) return; // Don't fetch if no project selected
     setIsLoading(true);
     setError(null);
     try {
-      const data = await chatApi.getChats(activeTab);
+      const data = await chatApi.getChats(activeTab, selectedProject.id);
       setChats(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load chats');
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, selectedProject]);
 
   // Refresh messages for a chat
   const refreshMessages = useCallback(async (chatId: string) => {
     try {
-      const data = await chatApi.getMessages(chatId);
+      const data = await chatApi.getMessagesPanel(chatId);
+      const messages = data?.messages;
+      const isSendEnabled = data?.isSendEnabled;
       setMessages((prev) => ({
         ...prev,
-        [chatId]: data,
+        [chatId]: messages,
+      }));
+      setIsSendEnabled((prev) => ({
+        ...prev,
+        [chatId]: isSendEnabled,
       }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load messages');
@@ -211,6 +222,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setActiveIcon,
     refreshChats,
     refreshMessages,
+    isSendEnabled: isSendEnabled[selectedChatId || ''] || false,
   };
 
   return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;

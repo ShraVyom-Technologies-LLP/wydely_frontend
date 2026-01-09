@@ -11,7 +11,8 @@ type PreviewRouteProp = RouteProp<RootStackParamList, 'BroadcastCampaignPreview'
 const BroadcastCampaignPreviewPage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<PreviewRouteProp>();
-  const { campaignName, templateName, templateContent, audienceSize } = route.params;
+  const { campaignName, templateName, templateContent, audienceSize, campaignCost, walletBalance } =
+    route.params;
 
   return (
     <View style={styles.container}>
@@ -129,11 +130,11 @@ const BroadcastCampaignPreviewPage: React.FC = () => {
             <View style={styles.costRow}>
               <View style={styles.costColumn}>
                 <Text style={styles.costLabel}>Estimated cost:</Text>
-                <Text style={styles.costValue}>₹ 0.88</Text>
+                <Text style={styles.costValue}>₹ {campaignCost}</Text>
               </View>
               <View style={styles.costColumn}>
                 <Text style={styles.costLabel}>Available WCC:</Text>
-                <Text style={styles.costValuePositive}>₹ 50</Text>
+                <Text style={styles.costValuePositive}>₹ {walletBalance}</Text>
               </View>
             </View>
 

@@ -28,7 +28,7 @@ const CreateCampaignSidePanel: React.FC<Props> = ({ isOpen, onClose }) => {
   const { showToast } = useToast();
 
   const fetchTemplates = async (): Promise<TemplateOption[]> => {
-    const response = await api.getTemplates();
+    const response = await api.getExistingTemplates();
     if (!response.success) {
       showToast({
         type: 'error',
@@ -132,7 +132,7 @@ const CreateCampaignSidePanel: React.FC<Props> = ({ isOpen, onClose }) => {
                 onPress={() => setIsTemplateDropdownOpen((prev) => !prev)}
               >
                 {selectedTemplate ? (
-                  <Text style={styles.templateName}>{selectedTemplate.name}</Text>
+                  <Text style={styles.templateName}>{selectedTemplate.title}</Text>
                 ) : (
                   <Text style={styles.dropdownPlaceholder}>-Select-</Text>
                 )}
@@ -159,7 +159,7 @@ const CreateCampaignSidePanel: React.FC<Props> = ({ isOpen, onClose }) => {
                           selectedTemplateId === template.id && styles.dropdownItemTextSelected,
                         ]}
                       >
-                        {template.name}
+                        {template.title}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -176,7 +176,7 @@ const CreateCampaignSidePanel: React.FC<Props> = ({ isOpen, onClose }) => {
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Preview</Text>
               <Text style={[styles.fieldInput, styles.previewInput]}>
-                {selectedTemplate ? selectedTemplate.content : ''}
+                {selectedTemplate ? selectedTemplate.message : ''}
               </Text>
             </View>
 

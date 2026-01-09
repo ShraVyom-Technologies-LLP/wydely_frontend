@@ -11,7 +11,7 @@ interface LoginFormProps {
   errors: FieldErrors<LoginFormValues>;
   onSubmit: () => void;
   isSubmitting: boolean;
-  onLoginViaOTP?: () => void;
+  onLoginViaOTPButtonPress?: () => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({
@@ -19,7 +19,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
   errors,
   onSubmit,
   isSubmitting,
-  onLoginViaOTP,
+  onLoginViaOTPButtonPress,
 }) => {
   return (
     <View style={styles.formFields}>
@@ -75,9 +75,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
       </Pressable>
 
       {/* Login via OTP Link */}
-      {onLoginViaOTP && (
+      {onLoginViaOTPButtonPress && (
         <View style={styles.otpLinkContainer}>
-          <Text style={styles.otpLink} onPress={onLoginViaOTP}>
+          <Text style={styles.otpLink} onPress={onLoginViaOTPButtonPress}>
             Login via OTP
           </Text>
         </View>

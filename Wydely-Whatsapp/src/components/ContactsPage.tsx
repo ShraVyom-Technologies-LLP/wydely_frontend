@@ -5,23 +5,33 @@ import DashboardHeader from './dashboard/chatsDashboard/DashboardHeader';
 import CreateCampaignSidePanel from './CreateCampaignSidePanel';
 import AddContactSidePanel from './AddContactSidePanel';
 import { apiService, Contact } from '../services/api';
+import { useProject } from '../context/ProjectContext';
+import { useApiCall } from '../hooks/useApiCall';
 
 const ContactsPage: React.FC = () => {
+  const { selectedProject } = useProject();
   const [contactsList, setContactsList] = useState<Contact[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [isBroadcastPanelOpen, setIsBroadcastPanelOpen] = useState(false);
   const [isAddContactPanelOpen, setIsAddContactPanelOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchContacts = async () => {
-      const result = await apiService.getContacts();
-      if (result.success) {
-        setContactsList(result.data ?? []);
+  const fetchContactsAPI = useApiCall((projectId?: string) => apiService.getContacts(projectId), {
+    showErrorToast: true,
+    errorMessage: 'Failed to load contacts',
+    onSuccess: (data) => {
+      if (data) {
+        setContactsList(data);
       }
-    };
-    fetchContacts();
-  }, []);
+    },
+  });
+
+  useEffect(() => {
+    if (selectedProject) {
+      fetchContactsAPI.execute(selectedProject.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject]);
 
   const filteredContacts = React.useMemo(() => {
     let filtered = contactsList;

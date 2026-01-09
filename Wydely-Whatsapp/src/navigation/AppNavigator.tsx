@@ -6,6 +6,7 @@ import { RootStackParamList } from './types';
 import SignUpPage from '../screens/SignUpPage';
 import LoginPage from '../screens/LoginPage';
 import OTPVerificationPage from '../screens/OTPVerificationPage';
+import ProjectsPageWrapper from '../screens/ProjectsPageWrapper';
 import DashboardPageWrapper from '../screens/DashboardPageWrapper';
 import BroadcastCampaignPageWrapper from '../screens/BroadcastCampaignPageWrapper';
 import BroadcastCampaignPreviewPageWrapper from '../screens/BroadcastCampaignPreviewPageWrapper';
@@ -21,6 +22,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       SignUp: '/signup',
       Login: '/login',
       OTP: '/otp',
+      Projects: '/projects',
       Dashboard: '/dashboard',
       Profile: '/profile',
       BroadcastCampaign: '/campaigns/broadcast',
@@ -43,6 +45,7 @@ const AppNavigator = () => {
         <Stack.Screen name="SignUp" component={SignUpPage} />
         <Stack.Screen name="Login" component={LoginPage} />
         <Stack.Screen name="OTP" component={OTPVerificationPage} />
+        <Stack.Screen name="Projects" component={ProjectsPageWrapper} />
         <Stack.Screen name="Dashboard" component={DashboardPageWrapper} />
         <Stack.Screen name="BroadcastCampaign" component={BroadcastCampaignPageWrapper} />
         <Stack.Screen

@@ -1,7 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { apiService } from '../services/api';
 
 // Validation schema for login
 const schema = z.object({
@@ -21,14 +20,7 @@ export const useLoginForm = () => {
     mode: 'onBlur',
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
-    console.log('Login payload:', values);
-
-    return await apiService.login(values.email, values.password);
-  };
-
   return {
     ...form,
-    onSubmit: form.handleSubmit(onSubmit),
   };
 };

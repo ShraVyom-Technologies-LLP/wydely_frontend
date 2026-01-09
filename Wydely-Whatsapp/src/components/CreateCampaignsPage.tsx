@@ -50,7 +50,7 @@ const CreateCampaignsPage: React.FC = () => {
     }
   };
 
-  const campaigns = [
+  const campaignTypes = [
     {
       id: 'broadcast',
       title: 'Broadcast Campaign',
@@ -91,14 +91,14 @@ const CreateCampaignsPage: React.FC = () => {
             <Text style={styles.heading}>Choose Your Campaign Type</Text>
           </View>
           <View style={styles.cardsContainer}>
-            {campaigns.map((campaign) => (
+            {campaignTypes.map((campaignType) => (
               <CampaignCard
-                key={campaign.id}
-                title={campaign.title}
-                description={campaign.description}
-                iconColor={campaign.iconColor}
-                iconImage={campaign.iconImage}
-                onPress={() => handleCampaignPress(campaign.id)}
+                key={campaignType.id}
+                title={campaignType.title}
+                description={campaignType.description}
+                iconColor={campaignType.iconColor}
+                iconImage={campaignType.iconImage}
+                onPress={() => handleCampaignPress(campaignType.id)}
               />
             ))}
           </View>

@@ -6,24 +6,40 @@ import colors from '../theme/colors';
 import DashboardHeader from './dashboard/chatsDashboard/DashboardHeader';
 import { RootStackParamList } from '../navigation/types';
 import { apiService, Campaign } from '../services/api';
+import { useProject } from '../context/ProjectContext';
+import { useApiCall } from '../hooks/useApiCall';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const ExistingCampaignsPage: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { selectedProject } = useProject();
   const [campaignsList, setCampaignsList] = useState<Campaign[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
+  console.log('selectedProject', selectedProject);
+
+  const fetchCampaignsAPI = useApiCall(
+    (projectId?: string) => apiService.getExistingCampaigns(projectId),
+    {
+      showErrorToast: true,
+      errorMessage: 'Failed to load campaigns',
+      onSuccess: (data) => {
+        if (data) {
+          setCampaignsList(data);
+        }
+      },
+    }
+  );
+
   useEffect(() => {
-    const fetchCampaigns = async () => {
-      const result = await apiService.getExistingCampaigns();
-      if (result.success) {
-        setCampaignsList(result.data ?? []);
-      }
-    };
-    fetchCampaigns();
-  }, []);
+    if (selectedProject) {
+      console.log('selectedProject', selectedProject);
+      fetchCampaignsAPI.execute(selectedProject.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject]);
 
   const filteredCampaigns = useMemo(() => {
     let filtered = campaignsList;

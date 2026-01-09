@@ -17,6 +17,9 @@ import LoginLeftPanel from '../components/LoginLeftPanel';
 import OTPInput from '../components/OTPInput';
 import { RootStackParamList } from '../navigation/types';
 import { apiService } from '../services/api';
+import { clearFormData } from '../utils/formStorage';
+import { useApiCall } from '../hooks/useApiCall';
+import LoadingWidget from '../components/LoadingWidget';
 
 type OTPScreenNavigationProp = StackNavigationProp<RootStackParamList, 'OTP'>;
 type OTPScreenRouteProp = RouteProp<RootStackParamList, 'OTP'>;
@@ -59,7 +62,7 @@ export default function OTPVerificationPage({ handleBack }: Props) {
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     setValue,
     watch,
   } = useForm<FormValues>({
@@ -69,6 +72,50 @@ export default function OTPVerificationPage({ handleBack }: Props) {
       phoneOtp: '',
     },
     mode: 'onBlur',
+  });
+
+  // API call hooks - bind methods to preserve 'this' context
+  // For signup, use verifyOtp endpoint; for login, use unified login endpoint
+  const verifyOtpApi = useApiCall(
+    (data: Parameters<typeof apiService.verifyOtp>[0]) => apiService.verifyOtp(data),
+    {
+      showErrorToast: true,
+      errorMessage: 'OTP verification failed',
+      onSuccess: async () => {
+        // Clear stored form data after successful verification
+        if (from === 'signup') {
+          await clearFormData();
+        }
+        navigation.navigate('Projects');
+      },
+    }
+  );
+
+  // Unified login API for OTP verification (login flow only)
+  const verifyLoginOtpApi = useApiCall(
+    (emailOrMobile: string, otp: string) => apiService.login(emailOrMobile, 'otp', otp),
+    {
+      showErrorToast: true,
+      errorMessage: 'OTP verification failed',
+      onSuccess: () => {
+        navigation.navigate('Projects');
+      },
+    }
+  );
+
+  // Unified login API for resending OTP (login flow only)
+  const resendLoginOtpApi = useApiCall(
+    (emailOrMobile: string) => apiService.login(emailOrMobile, 'otp'),
+    {
+      showErrorToast: true,
+      errorMessage: 'Failed to resend OTP',
+    }
+  );
+
+  // Resend OTP API for signup flow
+  const resendOtpApi = useApiCall((email: string) => apiService.resendOtp(email), {
+    showErrorToast: true,
+    errorMessage: 'Failed to resend OTP',
   });
 
   const otpValue = watch('otp');
@@ -102,8 +149,11 @@ export default function OTPVerificationPage({ handleBack }: Props) {
 
     setIsEmailResending(true);
 
-    const response = await apiService.resendOtp(email);
-    if (response.success) {
+    // Use unified login endpoint for login flow, resendOtp for signup flow
+    const result =
+      from === 'login' ? await resendLoginOtpApi.execute(email) : await resendOtpApi.execute(email);
+
+    if (result) {
       setEmailResendCooldown(60);
       const interval = setInterval(() => {
         setEmailResendCooldown((prev) => {
@@ -119,34 +169,17 @@ export default function OTPVerificationPage({ handleBack }: Props) {
     setIsEmailResending(false);
   };
 
-  const handlePhoneResend = async () => {
-    if (isPhoneResending || phoneResendCooldown > 0) return;
-
-    setIsPhoneResending(true);
-
-    const response = await apiService.resendOtp(undefined, phoneNumber);
-    if (response.success) {
-      setPhoneResendCooldown(60);
-      const interval = setInterval(() => {
-        setPhoneResendCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-
-    setIsPhoneResending(false);
-  };
-
   const onSubmit = async (_values: FormValues) => {
-    const response = await apiService.verifyOtp(email, phoneNumber, _values.emailOtp, _values.phoneOtp);
-    if (response.success) {
-      navigation.navigate('Dashboard');
+    if (from === 'login') {
+      // Use unified login endpoint for login OTP verification
+      // POST /api/v1/login with { emailOrMobile, otp, loginType: "otp" }
+      await verifyLoginOtpApi.execute(email, _values.otp);
     } else {
-      console.error('OTP verification failed:', response.error);
+      // Use verifyOtp endpoint for signup OTP verification
+      await verifyOtpApi.execute({
+        email: email,
+        emailOtp: _values.otp,
+      });
     }
   };
 
@@ -180,9 +213,9 @@ export default function OTPVerificationPage({ handleBack }: Props) {
               </Text>
             </View>
 
-            {isFromSignup ? (
+            {/* Signup OTP section - commented out for now, using same flow for login and signup */}
+            {/* {isFromSignup ? (
               <View style={styles.signupContentContainer}>
-                {/* Email OTP section */}
                 <View style={styles.otpSection}>
                   <View style={styles.otpSectionHeader}>
                     <Text style={styles.otpSectionText}>
@@ -222,7 +255,6 @@ export default function OTPVerificationPage({ handleBack }: Props) {
                   />
                 </View>
 
-                {/* Phone OTP section */}
                 <View style={styles.otpSection}>
                   <View style={styles.otpSectionHeader}>
                     <Text style={styles.otpSectionText}>
@@ -261,7 +293,6 @@ export default function OTPVerificationPage({ handleBack }: Props) {
                   />
                 </View>
 
-                {/* Submit Button */}
                 <Pressable
                   onPress={handleSubmit(onSubmit)}
                   disabled={
@@ -279,66 +310,76 @@ export default function OTPVerificationPage({ handleBack }: Props) {
                   </Text>
                 </Pressable>
               </View>
-            ) : (
-              <View style={styles.contentContainer}>
-                <Text style={styles.emailText}>
-                  We sent a code to <Text style={styles.emailHighlight}>{email}</Text>
-                </Text>
+            ) : ( */}
+            <View style={styles.contentContainer}>
+              <Text style={styles.emailText}>
+                We sent a code to <Text style={styles.emailHighlight}>{email}</Text>
+              </Text>
 
-                {/* OTP Input */}
-                <View style={styles.formContainer}>
-                  <Controller
-                    control={control}
-                    name="otp"
-                    render={({ field: { onChange, value } }) => (
-                      <OTPInput
-                        value={value}
-                        onChangeText={(newValue) => {
-                          onChange(newValue);
-                          setValue('otp', newValue, { shouldValidate: true });
-                        }}
-                        error={errors.otp?.message}
-                      />
-                    )}
-                  />
+              {/* OTP Input */}
+              <View style={styles.formContainer}>
+                <Controller
+                  control={control}
+                  name="otp"
+                  render={({ field: { onChange, value } }) => (
+                    <OTPInput
+                      value={value}
+                      onChangeText={(newValue) => {
+                        onChange(newValue);
+                        setValue('otp', newValue, { shouldValidate: true });
+                      }}
+                      error={errors.otp?.message}
+                    />
+                  )}
+                />
 
-                  {/* Submit Button */}
-                  <Pressable
-                    onPress={handleSubmit(onSubmit)}
-                    disabled={isSubmitting || otpValue.length !== 6}
-                    style={({ pressed }) => [
-                      styles.submitButton,
-                      (isSubmitting || otpValue.length !== 6) && styles.submitButtonDisabled,
-                      pressed && { opacity: 0.95 },
-                    ]}
-                  >
-                    <Text style={styles.submitButtonText}>
-                      {isSubmitting ? 'Verifying...' : 'Submit'}
+                {/* Submit Button */}
+                {(verifyOtpApi.isLoading ||
+                  verifyLoginOtpApi.isLoading ||
+                  resendOtpApi.isLoading ||
+                  resendLoginOtpApi.isLoading) && <LoadingWidget />}
+                <Pressable
+                  onPress={handleSubmit(onSubmit)}
+                  disabled={
+                    verifyOtpApi.isLoading || verifyLoginOtpApi.isLoading || otpValue.length !== 6
+                  }
+                  style={({ pressed }) => [
+                    styles.submitButton,
+                    (verifyOtpApi.isLoading ||
+                      verifyLoginOtpApi.isLoading ||
+                      otpValue.length !== 6) &&
+                      styles.submitButtonDisabled,
+                    pressed && { opacity: 0.95 },
+                  ]}
+                >
+                  <Text style={styles.submitButtonText}>
+                    {verifyOtpApi.isLoading || verifyLoginOtpApi.isLoading
+                      ? 'Verifying...'
+                      : 'Submit'}
+                  </Text>
+                </Pressable>
+
+                {/* Resend Link */}
+                <View style={styles.resendContainer}>
+                  {emailResendCooldown > 0 ? (
+                    <Text style={styles.resendText}>
+                      <Text style={styles.resendTextActive}>Didn't receive code? </Text>
+                      <Text style={styles.resendTextGrey}>Resend OTP in </Text>
+                      <Text style={styles.resendCountdown}>
+                        00:{String(emailResendCooldown).padStart(2, '0')}
+                      </Text>
                     </Text>
-                  </Pressable>
-
-                  {/* Resend Link */}
-                  <View style={styles.resendContainer}>
-                    {emailResendCooldown > 0 ? (
-                      <Text style={styles.resendText}>
-                        <Text style={styles.resendTextActive}>Didn't receive code? </Text>
-                        <Text style={styles.resendTextGrey}>Resend OTP in </Text>
-                        <Text style={styles.resendCountdown}>
-                          00:{String(emailResendCooldown).padStart(2, '0')}
-                        </Text>
+                  ) : (
+                    <Text style={styles.resendText}>
+                      <Text style={styles.resendTextGrey}>Didn't receive code? </Text>
+                      <Text style={styles.resendLink} onPress={handleEmailResend}>
+                        RESEND
                       </Text>
-                    ) : (
-                      <Text style={styles.resendText}>
-                        <Text style={styles.resendTextGrey}>Didn't receive code? </Text>
-                        <Text style={styles.resendLink} onPress={handleEmailResend}>
-                          RESEND
-                        </Text>
-                      </Text>
-                    )}
-                  </View>
+                    </Text>
+                  )}
                 </View>
               </View>
-            )}
+            </View>
           </ScrollView>
         </View>
       </View>

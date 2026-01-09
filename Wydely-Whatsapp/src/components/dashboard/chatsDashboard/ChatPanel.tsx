@@ -25,12 +25,18 @@ export interface Message {
     | 'RECEIVED_UNREAD';
 }
 
+export interface UserChatPanel {
+  messages: Message[];
+  isSendEnabled: boolean;
+}
+
 interface ChatPanelProps {
   messages: Message[];
+  isSendEnabled: boolean;
   onSendMessage?: (text: string) => void;
 }
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage }) => {
+const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, isSendEnabled }) => {
   const [messageText, setMessageText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -76,26 +82,28 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage }) => {
       </View>
 
       {/* Input Area - Fixed at bottom */}
-      <View style={styles.inputContainer}>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type a message..."
-            placeholderTextColor={colors.textMuted}
-            value={messageText}
-            onChangeText={setMessageText}
-            multiline
-            maxLength={1000}
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, !messageText.trim() && styles.sendButtonDisabled]}
-            onPress={handleSend}
-            disabled={!messageText.trim()}
-          >
-            <Text style={styles.sendButtonText}>Send</Text>
-          </TouchableOpacity>
+      {isSendEnabled && (
+        <View style={styles.inputContainer}>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message..."
+              placeholderTextColor={colors.textMuted}
+              value={messageText}
+              onChangeText={setMessageText}
+              multiline
+              maxLength={1000}
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, !messageText.trim() && styles.sendButtonDisabled]}
+              onPress={handleSend}
+              disabled={!messageText.trim()}
+            >
+              <Text style={styles.sendButtonText}>Send</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 };

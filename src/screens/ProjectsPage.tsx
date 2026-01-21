@@ -145,11 +145,8 @@ export default function ProjectsPage() {
   const { projects, setSelectedProject, refreshProjects, isLoading } = useProject();
   const [projectName, setProjectName] = useState('');
 
-  // Load projects when Projects page mounts
-  useEffect(() => {
-    refreshProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Note: Projects are automatically loaded by ProjectContext on mount
+  // No need to call refreshProjects() here to avoid duplicate API calls
 
   const createProjectApi = useApiCall((name: string) => apiService.createProject({ name }), {
     showErrorToast: true,

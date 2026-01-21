@@ -53,12 +53,12 @@ services:
     build:
       context: .
       args:
-        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://72.60.100.178:8080}
+        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-https://api.wydely.io}
     ports:
       - '3000:3000'
     restart: unless-stopped
     environment:
-      - EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL:-http://72.60.100.178:8080}
+      - EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL:-https://api.wydely.io}
 ```
 
 Then run:

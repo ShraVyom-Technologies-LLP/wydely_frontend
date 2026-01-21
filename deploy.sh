@@ -6,7 +6,7 @@
 set -e
 
 ENVIRONMENT=${1:-production}
-API_URL=${EXPO_PUBLIC_API_URL:-http://72.60.100.178:8080}
+API_URL=${EXPO_PUBLIC_API_URL:-https://api.wydely.io}
 
 echo "🚀 Starting deployment for environment: $ENVIRONMENT"
 echo "📡 API URL: $API_URL"

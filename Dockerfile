@@ -18,7 +18,7 @@ COPY . .
 
 # Set environment variables (can be overridden at runtime)
 ARG EXPO_PUBLIC_API_URL
-ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL:-http://72.60.100.178:8080}
+ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL:-https://api.wydely.io}
 
 # Set NODE_ENV for build
 ENV NODE_ENV=production

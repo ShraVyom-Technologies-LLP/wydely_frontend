@@ -210,3 +210,40 @@ export interface RawProjectApiResponse {
 export interface GetProjectsResponse {
   projects: Project[];
 }
+
+// Dashboard Types
+export interface DashboardData {
+  companyName: string;
+  balance: number;
+  whatsappStatus: 'LIVE' | 'PENDING' | 'INACTIVE';
+  qualityRating: 'LOW' | 'MEDIUM' | 'HIGH';
+  remainingQuota: number;
+  userProfile: {
+    name: string;
+    role: string;
+    phoneNumber: string;
+    avatarInitial: string;
+  };
+  balances: {
+    marketing: number;
+    utility: number;
+    authentication: number;
+  };
+  kycStatus: {
+    status: 'PENDING' | 'COMPLETED' | 'IN_PROGRESS';
+    stepNumber: number;
+  };
+  creditsBanner: {
+    creditsAmount: number;
+    steps: Array<{
+      id: string;
+      label: string;
+      completed: boolean;
+    }>;
+  };
+  referralData: {
+    referralLink: string;
+    earningsAmount: number;
+    pointsPerSignup: number;
+  };
+}

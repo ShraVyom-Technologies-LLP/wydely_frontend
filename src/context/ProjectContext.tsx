@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { Project } from '../utils/types';
 import { apiService } from '../services/api';
 import { useApiCall } from '../hooks/useApiCall';
+import { useAuth } from './AuthContext';
+import { navigationRef } from '../navigation/AppNavigator';
 
 interface ProjectState {
   projects: Project[];
@@ -19,6 +21,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Fetch projects from API
   const fetchProjects = useApiCall(() => apiService.getProjects(), {
@@ -39,8 +42,15 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Helper function to check if current path is an auth page
   const isAuthPage = (): boolean => {
     if (typeof window === 'undefined') {
-      // For React Native, we can't check the path easily
-      // Return false to allow fetching (React Native navigation handles routing differently)
+      // For React Native, check navigation state
+      if (navigationRef.isReady()) {
+        const currentRoute = navigationRef.getCurrentRoute();
+        return (
+          currentRoute?.name === 'Login' ||
+          currentRoute?.name === 'SignUp' ||
+          currentRoute?.name === 'OTP'
+        );
+      }
       return false;
     }
     const path = window.location.pathname;
@@ -48,14 +58,75 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return authPaths.some((authPath) => path.startsWith(authPath));
   };
 
-  // Fetch projects on mount if NOT on auth pages
-  // This ensures projects are loaded when refreshing protected pages
+  // Fetch projects when user becomes authenticated and is not on auth pages
+  // This ensures projects are loaded after login
   useEffect(() => {
-    if (!isAuthPage()) {
-      fetchProjects.execute();
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return;
+    }
+
+    // Only fetch if authenticated
+    if (isAuthenticated) {
+      // Check if we're on an auth page - if so, don't fetch yet
+      // The projects will be fetched when user navigates away from auth pages
+      if (isAuthPage()) {
+        return;
+      }
+
+      // Only fetch if we don't already have projects (to avoid unnecessary calls)
+      if (projects.length === 0 && !fetchProjects.isLoading) {
+        fetchProjects.execute();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthenticated, authLoading]);
+
+  // Listen to navigation state changes to fetch projects when navigating to Projects page
+  // This handles the case when user logs in and immediately navigates to Projects
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      const checkAndFetch = () => {
+        // Wait for navigation to be ready
+        if (!navigationRef.isReady()) {
+          return;
+        }
+
+        const currentRoute = navigationRef.getCurrentRoute();
+        const isOnProjectsPage = currentRoute?.name === 'Projects';
+        const isOnAuthPage =
+          currentRoute?.name === 'Login' ||
+          currentRoute?.name === 'SignUp' ||
+          currentRoute?.name === 'OTP';
+
+        // If we're on Projects page, authenticated, and don't have projects, fetch them
+        if (
+          isOnProjectsPage &&
+          !isOnAuthPage &&
+          projects.length === 0 &&
+          !fetchProjects.isLoading
+        ) {
+          fetchProjects.execute();
+        }
+      };
+
+      // Check immediately
+      checkAndFetch();
+
+      // Poll every 200ms for a short period to catch navigation changes
+      // This ensures we catch the navigation even if it happens slightly after authentication
+      const intervalId = setInterval(checkAndFetch, 200);
+      const timeoutId = setTimeout(() => {
+        clearInterval(intervalId);
+      }, 2000); // Stop polling after 2 seconds
+
+      return () => {
+        clearInterval(intervalId);
+        clearTimeout(timeoutId);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, authLoading]);
 
   const refreshProjects = useCallback(async () => {
     setIsLoading(true);

@@ -22,6 +22,7 @@ import colors from '../theme/colors';
 import { RootStackParamList } from '../navigation/types';
 import ExistingCampaignsPage from '../components/ExistingCampaignsPage';
 import ManagePage from '../components/ManagePage';
+import HomeDashboard from '../components/dashboard/HomeDashboard';
 
 // Placeholder components for other pages
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -202,7 +203,7 @@ export default function DashboardPage() {
   const renderPageContent = () => {
     switch (activeIcon) {
       case 'home':
-        return <PlaceholderPage title="Home Dashboard" />;
+        return <HomeDashboard onSearchChange={setSearchQuery} onThemeToggle={handleThemeToggle} />;
       case 'messages':
         return renderMessagesPage();
       case 'campaigns':

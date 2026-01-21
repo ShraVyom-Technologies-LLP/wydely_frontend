@@ -19,6 +19,7 @@ import {
   CreateProjectData,
   CreateProjectResponse,
   GetProjectsResponse,
+  DashboardData,
 } from '../utils/types';
 
 class ApiService {
@@ -33,7 +34,7 @@ class ApiService {
         ? process.env.EXPO_PUBLIC_API_URL
         : undefined;
 
-    this.baseUrl = baseUrl || envBaseUrl || 'http://72.60.100.178:8080';
+    this.baseUrl = baseUrl || envBaseUrl || 'https://api.wydely.io';
   }
 
   private async makeRequest<T>(
@@ -64,10 +65,10 @@ class ApiService {
         headers,
       });
 
-      const responseData = await response.json();
+      const responseData = await response?.json() || {};
 
       // Handle the new API response format
-      if (responseData.success === false) {
+      if (responseData?.success === false) {
         // Error response with displayError format
         const errorMessage =
           responseData.error?.displayError ||
@@ -416,6 +417,92 @@ class ApiService {
     return this.makeRequest<CreateProjectResponse>('/api/v1/project/create', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  // Dashboard API
+  async getDashboardData(projectId?: string): Promise<ApiResponse<DashboardData>> {
+    const queryParam = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return this.makeRequest<DashboardData>(`/api/v1/dashboard${queryParam}`, {
+      method: 'GET',
+    });
+  }
+
+  async getAccountBalance(projectId?: string): Promise<ApiResponse<{ balance: number }>> {
+    const queryParam = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return this.makeRequest<{ balance: number }>(`/api/v1/account/balance${queryParam}`, {
+      method: 'GET',
+    });
+  }
+
+  async getWalletBalances(projectId?: string): Promise<
+    ApiResponse<{
+      marketing: number;
+      utility: number;
+      authentication: number;
+    }>
+  > {
+    const queryParam = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return this.makeRequest<{
+      marketing: number;
+      utility: number;
+      authentication: number;
+    }>(`/api/v1/wallet/balances${queryParam}`, {
+      method: 'GET',
+    });
+  }
+
+  async getReferralData(): Promise<
+    ApiResponse<{
+      referralLink: string;
+      earningsAmount: number;
+      pointsPerSignup: number;
+    }>
+  > {
+    return this.makeRequest<{
+      referralLink: string;
+      earningsAmount: number;
+      pointsPerSignup: number;
+    }>('/api/v1/referral/data', {
+      method: 'GET',
+    });
+  }
+
+  async getKYCStatus(projectId?: string): Promise<
+    ApiResponse<{
+      status: 'PENDING' | 'COMPLETED' | 'IN_PROGRESS';
+      stepNumber: number;
+    }>
+  > {
+    const queryParam = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return this.makeRequest<{
+      status: 'PENDING' | 'COMPLETED' | 'IN_PROGRESS';
+      stepNumber: number;
+    }>(`/api/v1/kyc/status${queryParam}`, {
+      method: 'GET',
+    });
+  }
+
+  async getCreditsBanner(projectId?: string): Promise<
+    ApiResponse<{
+      creditsAmount: number;
+      steps: Array<{
+        id: string;
+        label: string;
+        completed: boolean;
+      }>;
+    }>
+  > {
+    const queryParam = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return this.makeRequest<{
+      creditsAmount: number;
+      steps: Array<{
+        id: string;
+        label: string;
+        completed: boolean;
+      }>;
+    }>(`/api/v1/credits/banner${queryParam}`, {
+      method: 'GET',
     });
   }
 }

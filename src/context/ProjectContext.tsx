@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { Project } from '../utils/types';
 import { apiService } from '../services/api';
 import { useApiCall } from '../hooks/useApiCall';
@@ -22,6 +22,8 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const hasFetchedRef = useRef(false); // Track if we've already fetched projects
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch projects from API
   const fetchProjects = useApiCall(() => apiService.getProjects(), {
@@ -31,11 +33,16 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (data) {
         console.log('projects fetched data', data);
         setProjects(data);
+        hasFetchedRef.current = true; // Mark as fetched
         // Auto-select first project if none selected and projects exist
         if (!selectedProject && data.length > 0) {
           setSelectedProject(data[0]);
         }
       }
+    },
+    onError: () => {
+      // Reset fetch flag on error so it can retry
+      hasFetchedRef.current = false;
     },
   });
 
@@ -58,6 +65,15 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return authPaths.some((authPath) => path.startsWith(authPath));
   };
 
+  // Reset fetch flag when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      hasFetchedRef.current = false;
+      setProjects([]);
+      setSelectedProject(null);
+    }
+  }, [isAuthenticated]);
+
   // Fetch projects when user becomes authenticated and is not on auth pages
   // This ensures projects are loaded after login
   useEffect(() => {
@@ -67,64 +83,70 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     // Only fetch if authenticated
-    if (isAuthenticated) {
-      // Check if we're on an auth page - if so, don't fetch yet
-      // The projects will be fetched when user navigates away from auth pages
-      if (isAuthPage()) {
-        return;
-      }
+    if (!isAuthenticated) {
+      return;
+    }
 
-      // Only fetch if we don't already have projects (to avoid unnecessary calls)
-      if (projects.length === 0 && !fetchProjects.isLoading) {
-        fetchProjects.execute();
-      }
+    // Check if we're on an auth page - if so, don't fetch yet
+    if (isAuthPage()) {
+      return;
+    }
+
+    // Only fetch if we haven't fetched yet and don't already have projects
+    if (!hasFetchedRef.current && projects.length === 0 && !fetchProjects.isLoading) {
+      hasFetchedRef.current = true;
+      fetchProjects.execute();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading]);
 
-  // Listen to navigation state changes to fetch projects when navigating to Projects page
-  // This handles the case when user logs in and immediately navigates to Projects
+  // Handle navigation to Projects page after login
+  // This ensures projects are fetched when user navigates from login to projects
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      const checkAndFetch = () => {
-        // Wait for navigation to be ready
-        if (!navigationRef.isReady()) {
-          return;
-        }
-
-        const currentRoute = navigationRef.getCurrentRoute();
-        const isOnProjectsPage = currentRoute?.name === 'Projects';
-        const isOnAuthPage =
-          currentRoute?.name === 'Login' ||
-          currentRoute?.name === 'SignUp' ||
-          currentRoute?.name === 'OTP';
-
-        // If we're on Projects page, authenticated, and don't have projects, fetch them
-        if (
-          isOnProjectsPage &&
-          !isOnAuthPage &&
-          projects.length === 0 &&
-          !fetchProjects.isLoading
-        ) {
-          fetchProjects.execute();
-        }
-      };
-
-      // Check immediately
-      checkAndFetch();
-
-      // Poll every 200ms for a short period to catch navigation changes
-      // This ensures we catch the navigation even if it happens slightly after authentication
-      const intervalId = setInterval(checkAndFetch, 200);
-      const timeoutId = setTimeout(() => {
-        clearInterval(intervalId);
-      }, 2000); // Stop polling after 2 seconds
-
-      return () => {
-        clearInterval(intervalId);
-        clearTimeout(timeoutId);
-      };
+    if (authLoading || !isAuthenticated) {
+      return;
     }
+
+    // Clear any existing timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    const checkAndFetch = () => {
+      // Wait for navigation to be ready
+      if (!navigationRef.isReady()) {
+        return;
+      }
+
+      const currentRoute = navigationRef.getCurrentRoute();
+      const isOnProjectsPage = currentRoute?.name === 'Projects';
+      const isOnAuthPage =
+        currentRoute?.name === 'Login' ||
+        currentRoute?.name === 'SignUp' ||
+        currentRoute?.name === 'OTP';
+
+      // If we're on Projects page, authenticated, haven't fetched yet, and don't have projects
+      if (
+        isOnProjectsPage &&
+        !isOnAuthPage &&
+        !hasFetchedRef.current &&
+        projects.length === 0 &&
+        !fetchProjects.isLoading
+      ) {
+        hasFetchedRef.current = true;
+        fetchProjects.execute();
+      }
+    };
+
+    // Check after a short delay to allow navigation to complete
+    fetchTimeoutRef.current = setTimeout(checkAndFetch, 100);
+
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+        fetchTimeoutRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading]);
 
@@ -135,6 +157,8 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const result = await fetchProjects.execute();
       if (result) {
         setProjects(result);
+        // Reset the fetch flag so we can fetch again if needed
+        hasFetchedRef.current = true;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load projects');
